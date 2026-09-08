@@ -81,7 +81,7 @@ install(
 )
 
 install(
-  DIRECTORY bringup/config bringup/launch docs
+  DIRECTORY bringup/config bringup/launch
   DESTINATION share/${PROJECT_NAME}
 )
 

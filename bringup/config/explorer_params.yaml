@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 250
+    update_rate: 200
 
     qontrol_explorer:
       type: qontrol_controller/QontrolVelocityController
@@ -13,7 +13,7 @@ controller_manager:
 qontrol_explorer:
   ros__parameters:
     robot_description_origin: robot_state_publisher
-    tip_frame: tool0
+    tip_frame: ft_frame
     root_frame: base_link
     state_interface:
       - position
