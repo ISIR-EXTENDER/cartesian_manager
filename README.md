@@ -107,14 +107,14 @@ This one-shot dispatch is important. `cartesian_manager` must not stay in `joint
 From the workspace root:
 
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/$ROS_DISTRO/setup.bash
 colcon build --packages-select cartesian_manager
 ```
 
 For local CMake-only validation from this package directory:
 
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/$ROS_DISTRO/setup.bash
 cmake -S . -B /tmp/cartesian_manager_build \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DBUILD_TESTING=OFF \
