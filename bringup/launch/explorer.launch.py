@@ -82,7 +82,11 @@ def generate_launch_description():
     spawner_qontrol = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["qontrol_explorer", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "qontrol_explorer",
+            "--controller-manager", "/controller_manager",
+            "--param-file", controller_config,
+        ],
     )
 
     spawner_gripper_controller = Node(
@@ -127,9 +131,9 @@ def generate_launch_description():
     return LaunchDescription(declared_arguments + [
         robot_simulation,
         robot_hardware,
-        delayed_spawner_qontrol,
         spawner_gripper_controller,
         manager_node,
         joy_node,
         joystick_mapper_launch,
+        delayed_spawner_qontrol
     ])
