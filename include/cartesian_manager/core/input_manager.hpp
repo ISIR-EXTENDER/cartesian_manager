@@ -33,9 +33,13 @@ namespace manager_core
     void clearAllCommands();
     void clearInputChannels();
 
-    std::optional<CartesianVelocity> getFullCommand(double now_sec) const;
+    std::optional<CartesianVelocity> getFullCommand(double now_sec,
+                                                    const RobotContext &context) const;
 
   private:
+    std::optional<CartesianVelocity> commandInBaseFrame(const CartesianVelocity &command,
+                                                        const RobotContext &context) const;
+
     std::unordered_map<InputSource, InputChannel> inputs_;
     FramesConfig frames_names;
   };

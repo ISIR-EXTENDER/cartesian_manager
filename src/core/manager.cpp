@@ -45,8 +45,6 @@ namespace manager_core
     {
       behaviour_state_ = Behaviours::PASSTHROUGH;
     }
-  }
-
     input_manager_.setFramesConfig(config.frames);
   }
 
@@ -231,7 +229,7 @@ namespace manager_core
       return CartesianVelocity{};
     }
 
-    auto command = input_manager_.getFullCommand(now_sec);
+    auto command = input_manager_.getFullCommand(now_sec, context);
     if (command)
     {
       applyGeometric(*command, context, dt_sec);
