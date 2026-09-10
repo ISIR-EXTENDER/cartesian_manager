@@ -126,6 +126,27 @@ cmake --build /tmp/cartesian_manager_build --target cartesian_manager_node
 
 ## Launch
 
+### Robot commands
+
+Explorer:
+
+```bash
+source install/setup.bash
+ros2 launch cartesian_manager explorer.launch.py use_simulation:=true
+```
+
+```bash
+source install/setup.bash
+ros2 launch cartesian_manager explorer.launch.py use_simulation:=false
+```
+
+Kinova:
+
+```bash
+source install/setup.bash
+ros2 launch cartesian_manager kinova.launch.py use_simulation:=false robot_ip:=192.168.1.10
+```
+
 The Explorer-style bringup is:
 
 ```bash
