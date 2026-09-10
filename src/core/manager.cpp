@@ -40,6 +40,8 @@ namespace manager_core
     registerGeometricShaper(Geometrics::JACO, std::make_unique<JacoShaper>(config.jaco));
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
+    rate_limiter_config_ = config.rate_limiter;
+    resetRateLimiter();
 
     if (behaviour_state_ == Behaviours::JOINT_TARGET && !jointTargetByName(joint_target_name_))
     {
@@ -225,11 +227,62 @@ namespace manager_core
     return nullptr;
   }
 
+  void Manager::resetRateLimiter()
+  {
+    last_command_ = CartesianVelocity{};
+  }
+
+  void Manager::setRateLimiterConfig(const RateLimiterConfig &config)
+  {
+    rate_limiter_config_ = config;
+  }
+
+  const RateLimiterConfig &Manager::getRateLimiterConfig() const
+  {
+    return rate_limiter_config_;
+  }
+
+  void Manager::applyRateLimiter(CartesianVelocity &command, double dt_sec)
+  {
+    if (dt_sec <= 0.0)
+    {
+      last_command_ = command;
+      return;
+    }
+
+    // Linear rate limiter
+    if (rate_limiter_config_.max_linear_acceleration > 0.0)
+    {
+      const double max_lin_delta = rate_limiter_config_.max_linear_acceleration * dt_sec;
+      const Eigen::Vector3d delta_lin = command.linear - last_command_.linear;
+      const double delta_lin_norm = delta_lin.norm();
+      if (delta_lin_norm > max_lin_delta)
+      {
+        command.linear = last_command_.linear + (delta_lin / delta_lin_norm) * max_lin_delta;
+      }
+    }
+
+    // Angular rate limiter
+    if (rate_limiter_config_.max_angular_acceleration > 0.0)
+    {
+      const double max_ang_delta = rate_limiter_config_.max_angular_acceleration * dt_sec;
+      const Eigen::Vector3d delta_ang = command.angular - last_command_.angular;
+      const double delta_ang_norm = delta_ang.norm();
+      if (delta_ang_norm > max_ang_delta)
+      {
+        command.angular = last_command_.angular + (delta_ang / delta_ang_norm) * max_ang_delta;
+      }
+    }
+
+    last_command_ = command;
+  }
+
   std::optional<CartesianCommand> Manager::update(double now_sec, double dt_sec,
                                                   const RobotContext &context)
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
     {
+      resetRateLimiter();
       return CartesianVelocity{};
     }
 
@@ -251,7 +304,14 @@ namespace manager_core
       {
         command->angular /= ang_norm;
       }
+
+      applyRateLimiter(*command, dt_sec);
+    }
+    else
+    {
+      resetRateLimiter();
     }
     return command;
   }
+
 } // namespace manager_core

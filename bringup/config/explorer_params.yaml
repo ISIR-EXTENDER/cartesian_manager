@@ -68,6 +68,10 @@ cartesian_manager:
       snake:
         gain: 3.0
 
+    rate_limiter:
+      max_linear_acceleration: 2.0
+      max_angular_acceleration: 2.0
+
     behaviours:
       joint_targets:
         joint_names:
