@@ -21,6 +21,7 @@ namespace manager_core
   {
     JacoShaperConfig jaco;
     SnakeShaperConfig snake;
+    FramesConfig frames;
     JointTargetBehaviourConfig joint_targets;
     RateLimiterConfig rate_limiter;
   };
@@ -29,8 +30,6 @@ namespace manager_core
   {
   public:
     void configure(const ManagerConfig &config);
-    void setInputFrameId(const std::string &frame_id);
-
     void addInputChannel(InputSource source, double timeout_sec, bool enabled = true);
     void clearInputChannels();
 
