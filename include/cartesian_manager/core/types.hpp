@@ -28,6 +28,13 @@ namespace manager_core
     JOINT_TARGET
   };
 
+  struct FramesConfig
+  {
+    std::string ee_frame{"ft_frame"};
+    std::string base_frame{"base_link"};
+    std::string hybrid_frame{"hybrid_frame"};
+  };
+
   struct CartesianPose
   {
     Eigen::Vector3d position = Eigen::Vector3d::Zero();
@@ -46,7 +53,7 @@ namespace manager_core
 
   struct TimedCartesianCommand
   {
-    CartesianVelocity command;
+    CartesianCommand command;
     double stamp_sec = 0.0;
     bool received = false;
   };
@@ -62,6 +69,7 @@ namespace manager_core
   struct RobotContext
   {
     CartesianPose ee_pose;
+    CartesianPose hybrid_pose;
     CartesianVelocity ee_vel;
     Eigen::MatrixXd ee_jac;
     std::vector<std::string> joint_names;

@@ -2,9 +2,17 @@
 
 namespace manager_core
 {
-  void InputManager::setFrameId(const std::string frame_id)
+  void InputManager::setFramesConfig(const std::string &ee_frame, const std::string &base_frame,
+                                     const std::string &hybrid_frame)
   {
-    input_frame_id = frame_id;
+    frames_names.base_frame = base_frame;
+    frames_names.ee_frame = ee_frame;
+    frames_names.hybrid_frame = hybrid_frame;
+  }
+
+  void InputManager::setFramesConfig(const FramesConfig &frame_names)
+  {
+    frames_names = frame_names;
   }
 
   void InputManager::addInputChannel(InputSource source, double timeout_sec, bool enabled)
@@ -52,20 +60,11 @@ namespace manager_core
     return inputs_.find(source) != inputs_.end();
   }
 
-  bool InputManager::checkFrameId(const CartesianVelocity &command) const
-  {
-    return command.frame_id == input_frame_id;
-  }
-
   bool InputManager::setCommand(InputSource source, const CartesianVelocity &command,
                                 double stamp_sec)
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
-      return false;
-    }
-    if (!checkFrameId(command))
     {
       return false;
     }
@@ -145,9 +144,47 @@ namespace manager_core
     inputs_.clear();
   }
 
-  std::optional<CartesianVelocity> InputManager::getFullCommand(double now_sec) const
+  std::optional<CartesianVelocity> InputManager::commandInBaseFrame(
+      const CartesianVelocity &input, const RobotContext &context) const
+  {
+    CartesianVelocity command = input;
+    if (command.frame_id.empty() || command.frame_id == frames_names.base_frame)
+    {
+      command.frame_id = frames_names.base_frame;
+      return command;
+    }
+
+    const CartesianPose *pose = nullptr;
+    if (command.frame_id == frames_names.ee_frame)
+    {
+      pose = &context.ee_pose;
+    }
+    else if (command.frame_id == frames_names.hybrid_frame)
+    {
+      pose = &context.hybrid_pose;
+    }
+    else
+    {
+      return std::nullopt;
+    }
+
+    auto rotation = pose->orientation;
+    if (rotation.norm() == 0.0)
+    {
+      return std::nullopt;
+    }
+    rotation.normalize();
+
+    command.angular = rotation * input.angular;
+    command.frame_id = frames_names.base_frame;
+    return command;
+  }
+
+  std::optional<CartesianVelocity> InputManager::getFullCommand(double now_sec,
+                                                                const RobotContext &context) const
   {
     CartesianVelocity command;
+    command.frame_id = frames_names.base_frame;
     double total_weight = 0.0;
 
     for (const auto &[source, channel] : inputs_)
@@ -157,17 +194,14 @@ namespace manager_core
         continue;
       }
 
-      if (command.frame_id.empty())
-      {
-        command.frame_id = channel.latest.command.frame_id;
-      }
-      else if (command.frame_id != channel.latest.command.frame_id)
+      const auto transformed_command = commandInBaseFrame(channel.latest.command, context);
+      if (!transformed_command)
       {
         continue;
       }
 
-      command.linear += channel.weight * channel.latest.command.linear;
-      command.angular += channel.weight * channel.latest.command.angular;
+      command.linear += channel.weight * transformed_command->linear;
+      command.angular += channel.weight * transformed_command->angular;
       total_weight += channel.weight;
     }
 

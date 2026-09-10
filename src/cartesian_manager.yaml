@@ -3,14 +3,28 @@ cartesian_manager:
     type: double
     default_value: 100.0
     description: "Command manager update loop frequency in Hz. Must be > 0 and <= 1000."
-  output_frame_id:
-    type: string
-    default_value: "base_link"
-    description: "Frame id used on the published Cartesian command."
-  default_input_frame_id:
-    type: string
-    default_value: "base_link"
-    description: "Required frame for input commands. Empty TwistStamped header.frame_id values are treated as this frame; other frames are rejected without TF conversion."
+
+  frames:
+    output_frame_id:
+      type: string
+      default_value: "base_link"
+      description: "Frame id used on the published Cartesian command."
+    default_input_frame_id:
+      type: string
+      default_value: "base_link"
+      description: "Frame used when an incoming TwistStamped header.frame_id is empty."
+    base_frame:
+      type: string
+      default_value: "base_link"
+      description: "Base command frame. Inputs in this frame are summed without rotation."
+    ee_frame:
+      type: string
+      default_value: "ft_frame"
+      description: "End-effector command frame. Inputs in this frame are rotated into base with ee_pose."
+    hybrid_frame:
+      type: string
+      default_value: "hybrid_frame"
+      description: "Hybrid command frame. Inputs in this frame are rotated into base with the manager-computed hybrid pose."
 
   topics:
     joystick_command:

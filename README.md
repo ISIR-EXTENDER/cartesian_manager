@@ -229,8 +229,7 @@ Runtime Explorer parameters live in:
 The main groups are:
 
 - `update_rate_hz`
-- `output_frame_id`
-- `default_input_frame_id`
+- `frames`
 - `topics`
 - `inputs`
 - `shapers`
@@ -240,9 +239,15 @@ The node validates runtime parameter updates. Invalid updates are rejected by th
 
 ## Frames
 
-Input Cartesian commands must already be in `default_input_frame_id`.
+Frame names are configured under `frames`:
 
-There is no TF conversion in this package. If a `TwistStamped` has an empty `header.frame_id`, it is treated as `default_input_frame_id`. If it has a different frame, the command is rejected.
+- `base_frame`: commands already in base are summed directly.
+- `ee_frame`: commands in this frame are rotated into base with the latest `ee_pose`.
+- `hybrid_frame`: commands in this frame are rotated into base with the manager-computed hybrid pose.
+- `default_input_frame_id`: used when an incoming `TwistStamped` has an empty `header.frame_id`; it must match one of the three command frames above.
+- `output_frame_id`: fallback frame for published zero commands.
+
+`cartesian_manager` does not use TF lookup. `ee_pose` must be stamped in `frames.base_frame`; the manager derives the hybrid pose from it.
 
 ## Joint Targets
 
