@@ -2,9 +2,17 @@
 
 namespace manager_core
 {
-  void InputManager::setFrameId(const std::string frame_id)
+  void InputManager::setFramesConfig(const std::string &ee_frame, const std::string &base_frame,
+                                     const std::string &hybrid_frame)
   {
-    input_frame_id = frame_id;
+    frames_names.base_frame = base_frame;
+    frames_names.ee_frame = ee_frame;
+    frames_names.hybrid_frame = hybrid_frame;
+  }
+
+  void InputManager::setFramesConfig(const FramesConfig &frame_names)
+  {
+    frames_names = frame_names;
   }
 
   void InputManager::addInputChannel(InputSource source, double timeout_sec, bool enabled)
@@ -52,20 +60,11 @@ namespace manager_core
     return inputs_.find(source) != inputs_.end();
   }
 
-  bool InputManager::checkFrameId(const CartesianVelocity &command) const
-  {
-    return command.frame_id == input_frame_id;
-  }
-
   bool InputManager::setCommand(InputSource source, const CartesianVelocity &command,
                                 double stamp_sec)
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
-      return false;
-    }
-    if (!checkFrameId(command))
     {
       return false;
     }

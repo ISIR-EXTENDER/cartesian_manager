@@ -12,7 +12,9 @@ namespace manager_core
   {
 
   public:
-    void setFrameId(const std::string frame_id);
+    void setFramesConfig(const std::string &ee_frame, const std::string &base_frame,
+                         const std::string &hybrid_frame);
+    void setFramesConfig(const FramesConfig &frame_names);
     void addInputChannel(InputSource source, double timeout_sec, bool enabled = true);
 
     void enableInputChannel(InputSource source);
@@ -20,8 +22,6 @@ namespace manager_core
 
     bool isInputChannelEnabled(InputSource source) const;
     bool hasInputChannel(InputSource source) const;
-
-    bool checkFrameId(const CartesianVelocity &command) const;
 
     bool setCommand(InputSource source, const CartesianVelocity &command, double stamp_sec);
     bool hasValidCommand(InputSource source, double now_sec) const;
@@ -37,6 +37,6 @@ namespace manager_core
 
   private:
     std::unordered_map<InputSource, InputChannel> inputs_;
-    std::string input_frame_id;
+    FramesConfig frames_names;
   };
 } // namespace manager_core

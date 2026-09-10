@@ -47,9 +47,7 @@ namespace manager_core
     }
   }
 
-  void Manager::setInputFrameId(const std::string &frame_id)
-  {
-    input_manager_.setFrameId(frame_id);
+    input_manager_.setFramesConfig(config.frames);
   }
 
   void Manager::addInputChannel(InputSource source, double timeout_sec, bool enabled)
