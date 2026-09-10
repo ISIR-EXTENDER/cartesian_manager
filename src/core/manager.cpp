@@ -234,10 +234,23 @@ namespace manager_core
     }
 
     auto command = input_manager_.getFullCommand(now_sec);
+    
     if (command)
     {
       applyGeometric(*command, context, dt_sec);
       applyBehaviour(*command, context, dt_sec);
+
+      // Normalize the linear and angular components of the command
+      const double lin_norm = command->linear.norm();
+      if (lin_norm > 1.0)
+      {
+        command->linear /= lin_norm;
+      }
+      const double ang_norm = command->angular.norm();
+      if (ang_norm > 1.0)
+      {
+        command->angular /= ang_norm;
+      }
     }
     return command;
   }
