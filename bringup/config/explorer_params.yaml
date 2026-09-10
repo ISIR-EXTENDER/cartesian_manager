@@ -26,7 +26,7 @@ qontrol_explorer:
     command_max_angular_velocity: 0.4
     topic_max_angular_velocity: /explorer_user_interfaces/rqt_armcontrol/max_angular_speed
     input_topic_name: /cartesian_command
-    regularisation_weight: 1e-2
+    regularisation_weight: 1e-4
     topic_control_frame: /explorer_user_interfaces/rqt_armcontrol/control_frame_selection
     joint_target_topic_name: /joint_target_command
     joint_target_gain: 1.0
@@ -37,8 +37,13 @@ qontrol_explorer:
 cartesian_manager:
   ros__parameters:
     update_rate_hz: 100.0
-    output_frame_id: base_link
-    default_input_frame_id: base_link
+
+    frames:
+      output_frame_id: base_link
+      default_input_frame_id: base_link
+      base_frame: base_link
+      ee_frame: ft_frame
+      hybrid_frame: hybrid_frame
 
     topics:
       joystick_command: /joystick_cartesian_command
