@@ -96,10 +96,18 @@ namespace ros_cartesian_manager
       return true;
     }
 
+    bool framesEqual(const manager_core::FramesConfig &lhs,
+                     const manager_core::FramesConfig &rhs)
+    {
+      return lhs.base_frame == rhs.base_frame && lhs.ee_frame == rhs.ee_frame &&
+             lhs.hybrid_frame == rhs.hybrid_frame;
+    }
+
     bool managerConfigsEqual(const manager_core::ManagerConfig &lhs,
                              const manager_core::ManagerConfig &rhs)
     {
-      return lhs.jaco.min_radius == rhs.jaco.min_radius &&
+      return framesEqual(lhs.frames, rhs.frames) &&
+             lhs.jaco.min_radius == rhs.jaco.min_radius &&
              lhs.jaco.max_angular_velocity == rhs.jaco.max_angular_velocity &&
              lhs.snake.gain == rhs.snake.gain &&
              jointTargetsEqual(lhs.joint_targets, rhs.joint_targets);
@@ -115,13 +123,25 @@ namespace ros_cartesian_manager
         {
           params.update_rate_hz = param.as_double();
         }
-        else if (name == "output_frame_id")
+        else if (name == "frames.output_frame_id")
         {
-          params.output_frame_id = param.as_string();
+          params.frames.output_frame_id = param.as_string();
         }
-        else if (name == "default_input_frame_id")
+        else if (name == "frames.default_input_frame_id")
         {
-          params.default_input_frame_id = param.as_string();
+          params.frames.default_input_frame_id = param.as_string();
+        }
+        else if (name == "frames.base_frame")
+        {
+          params.frames.base_frame = param.as_string();
+        }
+        else if (name == "frames.ee_frame")
+        {
+          params.frames.ee_frame = param.as_string();
+        }
+        else if (name == "frames.hybrid_frame")
+        {
+          params.frames.hybrid_frame = param.as_string();
         }
         else if (name == "topics.joystick_command")
         {
@@ -342,14 +362,11 @@ namespace ros_cartesian_manager
     const auto previous_config = config_;
     const bool manager_config_changed =
         force_rebuild || !managerConfigsEqual(previous_config.manager, config.manager);
-    const bool input_frame_changed =
-        force_rebuild ||
-        previous_config.frames.default_input_frame_id != config.frames.default_input_frame_id;
     const bool input_sources_changed =
         force_rebuild || !inputSourcesEqual(previous_config.inputs, config.inputs);
-    const bool input_config_changed = force_rebuild || input_frame_changed ||
-                                      input_sources_changed ||
-                                      !inputConfigsEqual(previous_config.inputs, config.inputs);
+    const bool input_config_changed =
+        force_rebuild || input_sources_changed ||
+        !inputConfigsEqual(previous_config.inputs, config.inputs);
     const bool ros_interfaces_changed = force_rebuild || input_sources_changed ||
                                         !usedTopicsEqual(previous_config.topics, config.topics);
     const bool timer_rate_changed =
@@ -364,8 +381,7 @@ namespace ros_cartesian_manager
 
     if (input_config_changed)
     {
-      manager_.setInputFrameId(config_.frames.default_input_frame_id);
-      if (input_frame_changed || input_sources_changed)
+      if (input_sources_changed)
       {
         manager_.clearInputChannels();
       }
@@ -479,7 +495,7 @@ namespace ros_cartesian_manager
               Eigen::Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
                                  msg.pose.orientation.y, msg.pose.orientation.z);
           robot_context_.ee_pose.frame_id =
-              frameOrDefault(msg.header.frame_id, config_.frames.default_input_frame_id);
+              frameOrDefault(msg.header.frame_id, config_.frames.command_frames.base_frame);
         });
 
     topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
@@ -522,8 +538,7 @@ namespace ros_cartesian_manager
             {
               RCLCPP_WARN_THROTTLE(
                   get_logger(), *get_clock(), 5000,
-                  "Ignoring joystick command in frame '%s'; expected input frame '%s'",
-                  command.frame_id.c_str(), config_.frames.default_input_frame_id.c_str());
+                  "Ignoring joystick command because the source is not configured");
             }
           });
     }
@@ -540,8 +555,7 @@ namespace ros_cartesian_manager
             {
               RCLCPP_WARN_THROTTLE(
                   get_logger(), *get_clock(), 5000,
-                  "Ignoring visual-servoing command in frame '%s'; expected input frame '%s'",
-                  command.frame_id.c_str(), config_.frames.default_input_frame_id.c_str());
+                  "Ignoring visual-servoing command because the source is not configured");
             }
           });
     }
