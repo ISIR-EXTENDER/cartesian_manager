@@ -28,6 +28,12 @@ namespace manager_core
     JOINT_TARGET
   };
 
+  struct FramesConfig
+  {
+    std::string ee_frame{"ft_frame"};
+    std::string base_frame{"base_link"};
+    std::string hybrid_frame{"hybrid_frame"};
+  };
   struct CartesianPose
   {
     Eigen::Vector3d position = Eigen::Vector3d::Zero();
