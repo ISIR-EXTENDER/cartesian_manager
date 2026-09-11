@@ -70,7 +70,7 @@ cartesian_manager:
 
     rate_limiter:
       max_linear_acceleration: 2.0
-      max_angular_acceleration: 2.0
+      max_angular_acceleration: 1.0
 
     behaviours:
       joint_targets:

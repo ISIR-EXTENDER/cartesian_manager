@@ -6,9 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "cartesian_manager/core/shapers/geometric/jaco.hpp"
-#include "cartesian_manager/core/shapers/geometric/snake.hpp"
-
 namespace manager_core
 {
   namespace
@@ -41,12 +38,14 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
     rate_limiter_config_ = config.rate_limiter;
-    resetRateLimiter();
+    rate_limiter_.reset();
 
     if (behaviour_state_ == Behaviours::JOINT_TARGET && !jointTargetByName(joint_target_name_))
     {
       behaviour_state_ = Behaviours::PASSTHROUGH;
     }
+
+    rate_limiter_.setConfig(rate_limiter_config_);
   }
 
   void Manager::setInputFrameId(const std::string &frame_id)
@@ -227,22 +226,22 @@ namespace manager_core
     return nullptr;
   }
 
-  void Manager::resetRateLimiter()
+  /*void Manager::resetRateLimiter()
   {
     last_command_ = CartesianVelocity{};
-  }
+  }*/
 
-  void Manager::setRateLimiterConfig(const RateLimiterConfig &config)
+  /*void Manager::setRateLimiterConfig(const RateLimiterConfig &config)
   {
     rate_limiter_config_ = config;
-  }
+  }*/
 
-  const RateLimiterConfig &Manager::getRateLimiterConfig() const
+  /*const RateLimiterConfig &Manager::getRateLimiterConfig() const
   {
     return rate_limiter_config_;
-  }
-
-  void Manager::applyRateLimiter(CartesianVelocity &command, double dt_sec)
+  }*/
+  
+  /*void Manager::applyRateLimiter(CartesianVelocity &command, double dt_sec)
   {
     if (dt_sec <= 0.0)
     {
@@ -275,14 +274,14 @@ namespace manager_core
     }
 
     last_command_ = command;
-  }
+  }*/
 
   std::optional<CartesianCommand> Manager::update(double now_sec, double dt_sec,
                                                   const RobotContext &context)
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
     {
-      resetRateLimiter();
+      rate_limiter_.reset();
       return CartesianVelocity{};
     }
 
@@ -305,11 +304,11 @@ namespace manager_core
         command->angular /= ang_norm;
       }
 
-      applyRateLimiter(*command, dt_sec);
+      rate_limiter_.update(*command, dt_sec);
     }
     else
     {
-      resetRateLimiter();
+      rate_limiter_.reset();
     }
     return command;
   }

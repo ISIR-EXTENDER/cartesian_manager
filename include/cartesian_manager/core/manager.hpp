@@ -12,16 +12,16 @@
 #include "cartesian_manager/core/shapers/geometric/jaco.hpp"
 #include "cartesian_manager/core/shapers/geometric/snake.hpp"
 #include "cartesian_manager/core/shapers/shaper.hpp"
-
+#include "cartesian_manager/core/ratelimiter.hpp"
 #include "cartesian_manager/core/types.hpp"
 
 namespace manager_core
 {
-  struct RateLimiterConfig
+  /*struct RateLimiterConfig
   {
     double max_linear_acceleration{2.0};   // maximum change per second in normalized linear command (<= 0.0 to disable)
     double max_angular_acceleration{2.0};  // maximum change per second in normalized angular command (<= 0.0 to disable)
-  };
+  };*/
 
   struct ManagerConfig
   {
@@ -52,14 +52,14 @@ namespace manager_core
     std::optional<CartesianVelocity> update(double now_sec, double dt_sec,
                                             const RobotContext &context);
 
-    void resetRateLimiter();
-    void setRateLimiterConfig(const RateLimiterConfig &config);
-    const RateLimiterConfig &getRateLimiterConfig() const;
+    //void resetRateLimiter();
+    //void setRateLimiterConfig(const RateLimiterConfig &config);
+    //const RateLimiterConfig &getRateLimiterConfig() const;
 
   private:
     void applyGeometric(CartesianVelocity &command, const RobotContext &context, double dt_sec);
     void applyBehaviour(CartesianVelocity &command, const RobotContext &context, double dt_sec);
-    void applyRateLimiter(CartesianVelocity &command, double dt_sec);
+    //void applyRateLimiter(CartesianVelocity &command, double dt_sec);
 
     void registerGeometricShaper(Geometrics state, std::unique_ptr<Shaper> shaper);
     void registerBehaviour(Behaviours state, std::unique_ptr<Shaper> shaper);
@@ -70,7 +70,8 @@ namespace manager_core
     Behaviours behaviour_state_{Behaviours::PASSTHROUGH};
     JointTargetBehaviourConfig joint_target_config_;
     RateLimiterConfig rate_limiter_config_;
-    CartesianVelocity last_command_{};
+    //CartesianVelocity last_command_{};
+    RateLimiter rate_limiter_;
 
     std::unordered_map<Geometrics, std::unique_ptr<Shaper>> geometric_shapers_;
     std::unordered_map<Behaviours, std::unique_ptr<Shaper>> behaviours_;
