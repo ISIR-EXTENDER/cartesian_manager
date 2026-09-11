@@ -19,11 +19,11 @@ namespace manager_core
     void update(CartesianVelocity& command, double dt_sec);
 
     /// Reset internal state (e.g., when switching modes or on input timeout).
-    void reset();                                                                                         // OK
+    void reset();
 
     /// Update configuration at runtime.
-    void setConfig(const RateLimiterConfig& config);                                                      // OK
-    const RateLimiterConfig& getConfig() const;                                                           // OK
+    void setConfig(const RateLimiterConfig& config);
+    const RateLimiterConfig& getConfig() const;
 
   private:
     RateLimiterConfig config_;

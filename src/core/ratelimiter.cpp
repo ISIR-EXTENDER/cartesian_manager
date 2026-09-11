@@ -8,17 +8,17 @@
 
 namespace manager_core
 {
-  void RateLimiter::reset()                                                                         // OK
+  void RateLimiter::reset()
   {
     last_command_ = CartesianVelocity{};
   }
 
-  void RateLimiter::setConfig(const RateLimiterConfig &config)                                      // OK
+  void RateLimiter::setConfig(const RateLimiterConfig &config)
   {
     config_ = config;
   }
 
-  const RateLimiterConfig &RateLimiter::getConfig() const                                           // OK
+  const RateLimiterConfig &RateLimiter::getConfig() const
   {
     return config_;
   }
