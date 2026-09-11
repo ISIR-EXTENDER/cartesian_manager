@@ -12,7 +12,7 @@
 #include "cartesian_manager/core/shapers/geometric/jaco.hpp"
 #include "cartesian_manager/core/shapers/geometric/snake.hpp"
 #include "cartesian_manager/core/shapers/shaper.hpp"
-
+#include "cartesian_manager/core/ratelimiter.hpp"
 #include "cartesian_manager/core/types.hpp"
 
 namespace manager_core
@@ -22,6 +22,7 @@ namespace manager_core
     JacoShaperConfig jaco;
     SnakeShaperConfig snake;
     JointTargetBehaviourConfig joint_targets;
+    RateLimiterConfig rate_limiter;
   };
 
   class Manager
@@ -57,6 +58,8 @@ namespace manager_core
     Geometrics geometric_state_{Geometrics::BOTH};
     Behaviours behaviour_state_{Behaviours::PASSTHROUGH};
     JointTargetBehaviourConfig joint_target_config_;
+    RateLimiterConfig rate_limiter_config_;
+    RateLimiter rate_limiter_;
 
     std::unordered_map<Geometrics, std::unique_ptr<Shaper>> geometric_shapers_;
     std::unordered_map<Behaviours, std::unique_ptr<Shaper>> behaviours_;

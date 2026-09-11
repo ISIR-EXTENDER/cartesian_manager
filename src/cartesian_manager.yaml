@@ -90,6 +90,16 @@ cartesian_manager:
         default_value: 3.0
         description: "Scaling applied to tool_z_axis cross linear_velocity in snake mode."
 
+  rate_limiter:
+    max_linear_acceleration:
+      type: double
+      default_value: 2.0
+      description: "Maximum rate of change of normalized linear velocity command per second (<= 0.0 to disable)."
+    max_angular_acceleration:
+      type: double
+      default_value: 2.0
+      description: "Maximum rate of change of normalized angular velocity command per second (<= 0.0 to disable)."
+
   behaviours:
     joint_targets:
       joint_names:

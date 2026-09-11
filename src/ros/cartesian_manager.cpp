@@ -102,7 +102,11 @@ namespace ros_cartesian_manager
       return lhs.jaco.min_radius == rhs.jaco.min_radius &&
              lhs.jaco.max_angular_velocity == rhs.jaco.max_angular_velocity &&
              lhs.snake.gain == rhs.snake.gain &&
-             jointTargetsEqual(lhs.joint_targets, rhs.joint_targets);
+             jointTargetsEqual(lhs.joint_targets, rhs.joint_targets) &&
+             lhs.rate_limiter.max_linear_acceleration ==
+                 rhs.rate_limiter.max_linear_acceleration &&
+             lhs.rate_limiter.max_angular_acceleration ==
+                 rhs.rate_limiter.max_angular_acceleration;
     }
 
     cartesian_manager::Params updatedParamsForRequest(
