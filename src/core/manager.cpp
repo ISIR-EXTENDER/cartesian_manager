@@ -46,8 +46,6 @@ namespace manager_core
     }
 
     rate_limiter_.setConfig(rate_limiter_config_);
-  }
-
     input_manager_.setFramesConfig(config.frames);
   }
 
