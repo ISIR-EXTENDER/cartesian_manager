@@ -53,6 +53,23 @@ namespace ros_cartesian_manager
       }
     }
 
+    bool isKnownCommandFrame(const manager_core::FramesConfig &frames,
+                             const std::string &frame_id)
+    {
+      return frame_id == frames.base_frame || frame_id == frames.ee_frame ||
+             frame_id == frames.hybrid_frame;
+    }
+
+    void requireKnownCommandFrame(const manager_core::FramesConfig &frames,
+                                  const std::string &frame_id, const std::string &name)
+    {
+      if (!isKnownCommandFrame(frames, frame_id))
+      {
+        throw std::invalid_argument(name + " must match frames.base_frame, frames.ee_frame, or "
+                                   "frames.hybrid_frame");
+      }
+    }
+
     std::vector<std::string> normalizedNonEmptyNames(const std::vector<std::string> &names)
     {
       std::vector<std::string> normalized_names;
@@ -216,10 +233,18 @@ namespace ros_cartesian_manager
     requireNonEmpty(config.topics.joint_target_command, "topics.joint_target_command");
     requireNonEmpty(config.topics.output_command, "topics.output_command");
 
-    config.frames.output_frame_id = params.output_frame_id;
-    config.frames.default_input_frame_id = params.default_input_frame_id;
-    requireNonEmpty(config.frames.output_frame_id, "output_frame_id");
-    requireNonEmpty(config.frames.default_input_frame_id, "default_input_frame_id");
+    config.frames.output_frame_id = params.frames.output_frame_id;
+    config.frames.default_input_frame_id = params.frames.default_input_frame_id;
+    config.frames.command_frames.base_frame = params.frames.base_frame;
+    config.frames.command_frames.ee_frame = params.frames.ee_frame;
+    config.frames.command_frames.hybrid_frame = params.frames.hybrid_frame;
+    requireNonEmpty(config.frames.output_frame_id, "frames.output_frame_id");
+    requireNonEmpty(config.frames.default_input_frame_id, "frames.default_input_frame_id");
+    requireNonEmpty(config.frames.command_frames.base_frame, "frames.base_frame");
+    requireNonEmpty(config.frames.command_frames.ee_frame, "frames.ee_frame");
+    requireNonEmpty(config.frames.command_frames.hybrid_frame, "frames.hybrid_frame");
+    requireKnownCommandFrame(config.frames.command_frames, config.frames.default_input_frame_id,
+                             "frames.default_input_frame_id");
 
     const auto input_names = normalizedNonEmptyNames(params.inputs.sources);
     if (input_names.size() != params.inputs.sources.size())
@@ -233,6 +258,8 @@ namespace ros_cartesian_manager
     {
       config.inputs.push_back(makeInputConfig(inputSourceFromName(input_name), params));
     }
+
+    config.manager.frames = config.frames.command_frames;
 
     config.manager.jaco.min_radius = params.shapers.jaco.min_radius;
     config.manager.jaco.max_angular_velocity = params.shapers.jaco.max_angular_velocity;

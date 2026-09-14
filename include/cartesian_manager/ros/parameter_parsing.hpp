@@ -33,12 +33,14 @@ namespace ros_cartesian_manager
    * @brief Frame names used by the ROS bridge.
    *
    * output_frame_id is the frame used for published Cartesian commands. default_input_frame_id is
-   * applied when an incoming command message has an empty header frame.
+   * applied when an incoming command message has an empty header frame. command_frames names the
+   * only command frames the core manager can rotate into base before summing inputs.
    */
   struct FrameConfig
   {
     std::string output_frame_id;
     std::string default_input_frame_id;
+    manager_core::FramesConfig command_frames;
   };
 
   /**

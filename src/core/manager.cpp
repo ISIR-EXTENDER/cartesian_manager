@@ -46,11 +46,7 @@ namespace manager_core
     }
 
     rate_limiter_.setConfig(rate_limiter_config_);
-  }
-
-  void Manager::setInputFrameId(const std::string &frame_id)
-  {
-    input_manager_.setFrameId(frame_id);
+    input_manager_.setFramesConfig(config.frames);
   }
 
   void Manager::addInputChannel(InputSource source, double timeout_sec, bool enabled)
@@ -235,8 +231,7 @@ namespace manager_core
       return CartesianVelocity{};
     }
 
-    auto command = input_manager_.getFullCommand(now_sec);
-    
+    auto command = input_manager_.getFullCommand(now_sec, context);
     if (command)
     {
       applyGeometric(*command, context, dt_sec);
