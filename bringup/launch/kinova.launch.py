@@ -1,20 +1,14 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
-from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    gui = LaunchConfiguration("gui")
     use_simulation = LaunchConfiguration("use_simulation")
     joystick_config_file = LaunchConfiguration("joystick_config_file")
-    publish_ee_pose_from_tf = LaunchConfiguration("publish_ee_pose_from_tf")
 
-    use_actuator_interface = PythonExpression([
-        "'false' if '", use_simulation, "' == 'true' else 'true'"
-    ])
     use_fake_hardware = PythonExpression([
         "'true' if '", use_simulation, "' == 'true' else 'false'"
     ])
@@ -144,16 +138,6 @@ def generate_launch_description():
         parameters=[controller_config],
     )
 
-
-    tf_pose_publisher_node = Node(
-        package="cartesian_manager",
-        executable="tf_pose_publisher_node",
-        name="tf_pose_publisher",
-        output="screen",
-        parameters=[controller_config, {"use_sim_time": use_simulation}],
-        condition=IfCondition(publish_ee_pose_from_tf),
-    )
-
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -171,14 +155,6 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["gripper_controller", "-c", "/controller_manager"],
-        output="screen",
-    )
-
-    # Spawner for fault_controller
-    fault_controller_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["fault_controller", "-c", "/controller_manager"],
         output="screen",
     )
 
@@ -226,7 +202,6 @@ def generate_launch_description():
         manager_node,
         joy_node,
         joystick_mapper_launch,
-        tf_pose_publisher_node,
     ]
 
     return LaunchDescription(declared_arguments + nodes_to_start)
