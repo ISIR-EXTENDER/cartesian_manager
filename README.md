@@ -76,6 +76,12 @@ manager_core::Manager
 geometric shaper: both, jaco, or snake
         |
         v
+output normalization (||v|| <= 1, ||ω|| <= 1)
+        |
+        v
+rate limiter (bounds dv/dt and dω/dt)
+        |
+        v
 /cartesian_command TwistStamped
         |
         v
@@ -234,9 +240,61 @@ The main groups are:
 - `topics`
 - `inputs`
 - `shapers`
+- `rate_limiter`
 - `behaviours`
 
 The node validates runtime parameter updates. Invalid updates are rejected by the ROS parameter callback before they are applied internally.
+
+## Output Processing
+
+After the geometric shaper runs, `Manager::update` applies two sequential post-processing steps to ensure the output sent to `qontrol_controller` is always bounded and continuous.
+
+### Output Normalisation
+
+Each output component is clamped so that its Euclidean norm never exceeds 1.0 (the unit scale expected by `qontrol_controller`):
+
+```
+||v_out||  > 1  →  v_out  = v_out  / ||v_out||
+||ω_out||  > 1  →  ω_out  = ω_out  / ||ω_out||
+```
+
+This matters most in **snake mode**: the coupling term `gain × (z_tool × v_linear)` can easily produce `||ω|| > 1` at large linear velocities, which would otherwise exceed the `command_max_angular_velocity` scaling applied downstream.
+
+### Rate Limiter
+
+A vectorial slew-rate limiter bounds the step-to-step change in the normalised command. This prevents velocity discontinuities when the snake mode is toggled while the end-effector is already moving.
+
+The per-cycle maximum delta is:
+
+```
+Δv_max  = max_linear_acceleration  × dt
+Δω_max  = max_angular_acceleration × dt
+```
+
+If `||command - previous|| > Δ_max`, the output is clipped in the direction of the desired change, preserving the rotation/translation axis:
+
+```
+command = previous + (delta / ||delta||) × Δ_max
+```
+
+Setting either acceleration to `<= 0.0` disables limiting for that component.
+
+The rate limiter state is **reset to zero** whenever:
+
+- no valid command is available (input timeout), or
+- the `joint_target` behaviour is active.
+
+This avoids a stale `previous` value causing a phantom ramp when the joystick resumes.
+
+Configure both accelerations in `bringup/config/explorer_params.yaml`:
+
+```yaml
+cartesian_manager:
+  ros__parameters:
+    rate_limiter:
+      max_linear_acceleration: 2.0   # normalised units/s  (0.5 s to reach full speed)
+      max_angular_acceleration: 2.0  # normalised units/s  (0.5 s to reach full angular speed)
+```
 
 ## Frames
 

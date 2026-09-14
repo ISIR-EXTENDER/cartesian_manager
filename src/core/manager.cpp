@@ -6,9 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "cartesian_manager/core/shapers/geometric/jaco.hpp"
-#include "cartesian_manager/core/shapers/geometric/snake.hpp"
-
 namespace manager_core
 {
   namespace
@@ -40,11 +37,15 @@ namespace manager_core
     registerGeometricShaper(Geometrics::JACO, std::make_unique<JacoShaper>(config.jaco));
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
+    rate_limiter_config_ = config.rate_limiter;
+    rate_limiter_.reset();
 
     if (behaviour_state_ == Behaviours::JOINT_TARGET && !jointTargetByName(joint_target_name_))
     {
       behaviour_state_ = Behaviours::PASSTHROUGH;
     }
+
+    rate_limiter_.setConfig(rate_limiter_config_);
   }
 
   void Manager::setInputFrameId(const std::string &frame_id)
@@ -230,15 +231,36 @@ namespace manager_core
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
     {
+      rate_limiter_.reset();
       return CartesianVelocity{};
     }
 
     auto command = input_manager_.getFullCommand(now_sec);
+    
     if (command)
     {
       applyGeometric(*command, context, dt_sec);
       applyBehaviour(*command, context, dt_sec);
+
+      // Normalize the linear and angular components of the command
+      const double lin_norm = command->linear.norm();
+      if (lin_norm > 1.0)
+      {
+        command->linear /= lin_norm;
+      }
+      const double ang_norm = command->angular.norm();
+      if (ang_norm > 1.0)
+      {
+        command->angular /= ang_norm;
+      }
+
+      rate_limiter_.update(*command, dt_sec);
+    }
+    else
+    {
+      rate_limiter_.reset();
     }
     return command;
   }
+
 } // namespace manager_core

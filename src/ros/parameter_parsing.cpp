@@ -238,6 +238,10 @@ namespace ros_cartesian_manager
     config.manager.jaco.max_angular_velocity = params.shapers.jaco.max_angular_velocity;
     config.manager.snake.gain = params.shapers.snake.gain;
     config.manager.joint_targets = makeJointTargetConfig(params);
+    config.manager.rate_limiter.max_linear_acceleration =
+        params.rate_limiter.max_linear_acceleration;
+    config.manager.rate_limiter.max_angular_acceleration =
+        params.rate_limiter.max_angular_acceleration;
 
     requireNonNegative(config.manager.jaco.min_radius, "shapers.jaco.min_radius");
     requireNonNegative(config.manager.jaco.max_angular_velocity,
