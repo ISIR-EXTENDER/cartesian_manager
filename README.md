@@ -36,6 +36,7 @@ cartesian_manager/
           jaco.hpp
           snake.hpp
         behaviour/
+          intent_scaling.hpp
           joint_target.hpp
     ros/
       cartesian_manager.hpp
@@ -220,6 +221,7 @@ ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'geometric/snake
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/passthrough'}"
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/joint_target/home'}"
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/pose_target/ready'}"
+ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/intent_scaling'}"
 ```
 
 Mode strings are normalized before parsing:
@@ -358,6 +360,25 @@ The pose is executed immediately and replaces any pose target already in progres
 rejected because the manager does not perform TF lookups. Non-finite poses and zero quaternions
 are also rejected, while valid quaternions are normalized. Named YAML targets and
 `behaviour/pose_target/<name>` remain available.
+
+## Intent Scaling
+
+`behaviour/intent_scaling` speeds the arm up while the operator keeps pushing the same way. A push starts at
+`min_scale` of the linear command and rises to full scale; releasing the input, or turning back against the push,
+starts slow again. The output stays within unit scale, so `command_max_linear_velocity` in `qontrol_controller`
+remains the top speed. Angular commands are not scaled. `behaviour/passthrough` turns it off.
+
+```yaml
+    behaviours:
+      intent_scaling:
+        min_scale: 0.4              # scale at the start of a push
+        window_sec: 0.5             # how far back the push is measured
+        consistency_threshold: 0.5  # mean push along the current direction above which the scale rises
+        gain: 1.0                   # scale change per second per unit off the threshold
+```
+
+With these values a full push reaches full scale in about 1.6 s; a push under half the stick never does. All four
+can be changed at runtime with `ros2 param set`.
 
 ## Joint Targets
 
