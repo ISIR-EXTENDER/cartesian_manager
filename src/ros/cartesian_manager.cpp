@@ -26,6 +26,7 @@ namespace ros_cartesian_manager
     constexpr const char *kBehaviourPassthroughMode = "behaviour/passthrough";
     constexpr const char *kJointTargetModePrefix = "behaviour/joint_target/";
     constexpr const char *kPoseTargetModePrefix = "behaviour/pose_target/";
+    constexpr const char *kIntentScalingMode = "behaviour/intent_scaling";
 
     std::chrono::nanoseconds timerPeriod(double update_rate_hz)
     {
@@ -67,7 +68,12 @@ namespace ros_cartesian_manager
              a.max_linear_velocity == b.max_linear_velocity &&
              a.max_angular_velocity == b.max_angular_velocity &&
              a.position_tolerance == b.position_tolerance &&
-             a.orientation_tolerance == b.orientation_tolerance;
+             a.orientation_tolerance == b.orientation_tolerance &&
+             lhs.intent_scaling.min_scale == rhs.intent_scaling.min_scale &&
+             lhs.intent_scaling.window_sec == rhs.intent_scaling.window_sec &&
+             lhs.intent_scaling.consistency_threshold ==
+                 rhs.intent_scaling.consistency_threshold &&
+             lhs.intent_scaling.gain == rhs.intent_scaling.gain;
     }
 
     double stampSec(const builtin_interfaces::msg::Time &stamp, const double fallback_sec)
@@ -499,6 +505,7 @@ namespace ros_cartesian_manager
     const bool joint_target_request = normalized_mode_request.rfind(kJointTargetModePrefix, 0) == 0;
     const bool passthrough_request = normalized_mode_request == kBehaviourPassthroughMode;
     const bool pose_target_request = normalized_mode_request.rfind(kPoseTargetModePrefix, 0) == 0;
+    const bool intent_scaling_request = normalized_mode_request == kIntentScalingMode;
 
     if (!manager_.setMode(normalized_mode_request))
     {
@@ -513,7 +520,7 @@ namespace ros_cartesian_manager
       return;
     }
 
-    if (passthrough_request || pose_target_request)
+    if (passthrough_request || pose_target_request || intent_scaling_request)
       publishJointTargetCommand(std::nullopt);
   }
 

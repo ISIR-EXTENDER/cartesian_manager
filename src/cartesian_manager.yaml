@@ -206,3 +206,21 @@ cartesian_manager:
       orientation_tolerance:
         type: double
         default_value: 0.05
+
+    intent_scaling:
+      min_scale:
+        type: double
+        default_value: 0.4
+        description: "Linear command scale at the start of a push, in (0, 1]. Keeping the push raises it to 1."
+      window_sec:
+        type: double
+        default_value: 0.5
+        description: "Time window over which the push direction is averaged."
+      consistency_threshold:
+        type: double
+        default_value: 0.5
+        description: "Averaged normalized command along the current push direction, in [0, 1], above which the scale rises and below which it falls."
+      gain:
+        type: double
+        default_value: 1.0
+        description: "Scale change per second per unit of consistency above or below the threshold."

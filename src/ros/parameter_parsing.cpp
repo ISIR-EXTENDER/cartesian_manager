@@ -166,6 +166,25 @@ namespace ros_cartesian_manager
       return targets;
     }
 
+    manager_core::IntentScalingConfig makeIntentScalingConfig(const cartesian_manager::Params &params)
+    {
+      const auto &source = params.behaviours.intent_scaling;
+      manager_core::IntentScalingConfig config;
+      config.min_scale = source.min_scale;
+      config.window_sec = source.window_sec;
+      config.consistency_threshold = source.consistency_threshold;
+      config.gain = source.gain;
+      requirePositive(config.min_scale, "behaviours.intent_scaling.min_scale");
+      requireAtMost(config.min_scale, 1.0, "behaviours.intent_scaling.min_scale");
+      requirePositive(config.window_sec, "behaviours.intent_scaling.window_sec");
+      requireNonNegative(config.consistency_threshold,
+                         "behaviours.intent_scaling.consistency_threshold");
+      requireAtMost(config.consistency_threshold, 1.0,
+                    "behaviours.intent_scaling.consistency_threshold");
+      requireNonNegative(config.gain, "behaviours.intent_scaling.gain");
+      return config;
+    }
+
     manager_core::PoseTargetConfig makePoseTargetConfig(const cartesian_manager::Params &params,
                                                         const manager_core::FramesConfig &frames)
     {
@@ -300,6 +319,14 @@ namespace ros_cartesian_manager
         params.behaviours.pose_targets.position_tolerance = param.as_double();
       else if (name == "behaviours.pose_targets.orientation_tolerance")
         params.behaviours.pose_targets.orientation_tolerance = param.as_double();
+      else if (name == "behaviours.intent_scaling.min_scale")
+        params.behaviours.intent_scaling.min_scale = param.as_double();
+      else if (name == "behaviours.intent_scaling.window_sec")
+        params.behaviours.intent_scaling.window_sec = param.as_double();
+      else if (name == "behaviours.intent_scaling.consistency_threshold")
+        params.behaviours.intent_scaling.consistency_threshold = param.as_double();
+      else if (name == "behaviours.intent_scaling.gain")
+        params.behaviours.intent_scaling.gain = param.as_double();
     }
     return params;
   }
@@ -376,6 +403,7 @@ namespace ros_cartesian_manager
     config.manager.snake.gain = params.shapers.snake.gain;
     config.manager.joint_targets = makeJointTargetConfig(params);
     config.manager.pose_targets = makePoseTargetConfig(params, config.manager.frames);
+    config.manager.intent_scaling = makeIntentScalingConfig(params);
     config.manager.rate_limiter.max_linear_acceleration =
         params.rate_limiter.max_linear_acceleration;
     config.manager.rate_limiter.max_angular_acceleration =
