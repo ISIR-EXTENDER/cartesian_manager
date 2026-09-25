@@ -38,6 +38,8 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
     registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
+    registerBehaviour(Behaviours::INTENT_SCALING,
+                      std::make_unique<IntentScaling>(config.intent_scaling));
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
       behaviour_state_ = Behaviours::PASSTHROUGH;
@@ -56,6 +58,8 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     static_cast<PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
         .configure(config.pose_targets);
+    static_cast<IntentScaling &>(*behaviours_.at(Behaviours::INTENT_SCALING))
+        .configure(config.intent_scaling);
     rate_limiter_.setConfig(config.rate_limiter);
   }
 
@@ -144,6 +148,22 @@ namespace manager_core
           behaviours_.at(Behaviours::POSE_TARGET)->reset();
         }
         behaviour_state_ = Behaviours::PASSTHROUGH;
+        rate_limiter_.reset();
+        return true;
+      }
+
+      if (parts[1] == "intent_scaling")
+      {
+        if (parts.size() != 2)
+        {
+          return false;
+        }
+        if (behaviour_state_ == Behaviours::POSE_TARGET)
+        {
+          behaviours_.at(Behaviours::POSE_TARGET)->reset();
+        }
+        behaviours_.at(Behaviours::INTENT_SCALING)->reset();
+        behaviour_state_ = Behaviours::INTENT_SCALING;
         rate_limiter_.reset();
         return true;
       }
@@ -338,7 +358,12 @@ namespace manager_core
       rate_limiter_.update(*command, dt_sec);
     }
     else
+    {
       rate_limiter_.reset();
+      // No live input is a release: the next push starts slow again.
+      if (behaviour_state_ == Behaviours::INTENT_SCALING)
+        behaviours_.at(Behaviours::INTENT_SCALING)->reset();
+    }
 
     return command;
   }

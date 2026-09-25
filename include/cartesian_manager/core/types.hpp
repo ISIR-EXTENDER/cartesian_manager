@@ -27,7 +27,8 @@ namespace manager_core
   {
     PASSTHROUGH,
     JOINT_TARGET,
-    POSE_TARGET
+    POSE_TARGET,
+    INTENT_SCALING
   };
 
   struct FramesConfig

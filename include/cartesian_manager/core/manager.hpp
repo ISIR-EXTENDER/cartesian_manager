@@ -9,6 +9,7 @@
 #include "cartesian_manager/core/input_manager.hpp"
 
 #include "cartesian_manager/core/ratelimiter.hpp"
+#include "cartesian_manager/core/shapers/behaviour/intent_scaling.hpp"
 #include "cartesian_manager/core/shapers/behaviour/joint_target.hpp"
 #include "cartesian_manager/core/shapers/behaviour/pose_target.hpp"
 #include "cartesian_manager/core/shapers/geometric/jaco.hpp"
@@ -25,6 +26,7 @@ namespace manager_core
     FramesConfig frames;
     JointTargetBehaviourConfig joint_targets;
     PoseTargetConfig pose_targets;
+    IntentScalingConfig intent_scaling;
     RateLimiterConfig rate_limiter;
     std::vector<InputConfig> inputs;
   };
