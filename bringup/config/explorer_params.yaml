@@ -105,3 +105,8 @@ cartesian_manager:
         max_angular_velocity: 0.2
         position_tolerance: 0.01
         orientation_tolerance: 0.05
+      intent_scaling:
+        min_scale: 0.4
+        window_sec: 0.5
+        consistency_threshold: 0.5
+        gain: 1.0
