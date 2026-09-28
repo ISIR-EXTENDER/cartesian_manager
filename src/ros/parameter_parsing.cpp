@@ -210,7 +210,11 @@ namespace ros_cartesian_manager
       {
         manager_core::CartesianPose pose;
         pose.frame_id = source.frame_ids[index];
-        requireKnownCommandFrame(frames, pose.frame_id, "behaviours.pose_targets.frame_ids");
+        if (pose.frame_id != frames.base_frame)
+        {
+          throw std::invalid_argument(
+              "behaviours.pose_targets.frame_ids must match frames.base_frame");
+        }
         pose.position =
             Eigen::Vector3d(source.positions[index * 3], source.positions[index * 3 + 1],
                             source.positions[index * 3 + 2]);
