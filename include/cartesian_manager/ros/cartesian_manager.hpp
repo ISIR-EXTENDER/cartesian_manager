@@ -15,6 +15,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 
+#include <std_msgs/msg/float64.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_msgs/msg/string.hpp>
 
@@ -54,11 +55,13 @@ namespace ros_cartesian_manager
         const std::vector<rclcpp::Parameter> &parameters) const;
     void publishJointTargetCommand(const std::optional<manager_core::JointTargetCommand> &command);
     void publishStatus();
+    void publishIntentScale(const rclcpp::Time &now);
 
     TopicManager topic_manager_;
     manager_core::Manager manager_;
     manager_core::RobotContext robot_context_;
     rclcpp::TimerBase::SharedPtr timer_;
+    std::optional<rclcpp::Time> last_intent_scale_stamp_;
 
     std::shared_ptr<cartesian_manager::ParamListener> param_listener_;
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_validator_handle_;

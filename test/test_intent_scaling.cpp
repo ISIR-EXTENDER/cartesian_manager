@@ -192,3 +192,14 @@ TEST_F(IntentScalingManager, StartsSlowWhenSelectedAgain)
   ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
   EXPECT_NEAR(drive(1.0, kDt), 0.4, 1e-3);
 }
+
+TEST_F(IntentScalingManager, ReportsItsScaleOnlyWhileSelected)
+{
+  EXPECT_FALSE(manager.intentScale().has_value());
+  ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
+  EXPECT_NEAR(*manager.intentScale(), 0.4, 1e-9);
+  drive(1.0, 3.0);
+  EXPECT_DOUBLE_EQ(*manager.intentScale(), 1.0);
+  ASSERT_TRUE(manager.setMode("behaviour/passthrough"));
+  EXPECT_FALSE(manager.intentScale().has_value());
+}

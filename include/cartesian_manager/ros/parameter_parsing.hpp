@@ -29,6 +29,7 @@ namespace ros_cartesian_manager
     std::string ee_jac;
     std::string joint_states;
     std::string joint_target_command;
+    std::string intent_scale;
   };
 
   /**

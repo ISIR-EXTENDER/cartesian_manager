@@ -88,6 +88,11 @@ cartesian_manager:
       default_value: "/cartesian_command"
       read_only: true
       description: "Topic used by the command manager output publisher."
+    intent_scale:
+      type: string
+      default_value: "~/intent_scale"
+      read_only: true
+      description: "Topic carrying the current intent scale while behaviour/intent_scaling is active."
 
   inputs:
     sources:

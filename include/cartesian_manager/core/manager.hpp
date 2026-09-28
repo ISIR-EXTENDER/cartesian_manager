@@ -49,6 +49,8 @@ namespace manager_core
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
     std::optional<JointTargetCommand> activeJointTargetCommand() const;
+    // Current linear scale in [min_scale, 1], only while behaviour/intent_scaling is active.
+    std::optional<double> intentScale() const;
 
     Geometrics geometricState() const;
     Behaviours behaviourState() const;

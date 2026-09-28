@@ -314,6 +314,14 @@ namespace manager_core
     return nullptr;
   }
 
+  std::optional<double> Manager::intentScale() const
+  {
+    if (behaviour_state_ != Behaviours::INTENT_SCALING)
+      return std::nullopt;
+
+    return static_cast<const IntentScaling &>(*behaviours_.at(Behaviours::INTENT_SCALING)).scale();
+  }
+
   std::optional<CartesianCommand> Manager::update(double now_sec, double dt_sec,
                                                   const RobotContext &context)
   {

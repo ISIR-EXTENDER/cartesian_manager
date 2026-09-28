@@ -349,6 +349,7 @@ namespace ros_cartesian_manager
     config.topics.ee_jac = params.topics.ee_jac;
     config.topics.joint_states = params.topics.joint_states;
     config.topics.joint_target_command = params.topics.joint_target_command;
+    config.topics.intent_scale = params.topics.intent_scale;
     config.topics.output_command = params.topics.output_command;
 
     requireNonEmpty(config.topics.mode_request, "topics.mode_request");

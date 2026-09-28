@@ -207,6 +207,7 @@ Default topics from `bringup/config/explorer_params.yaml`:
 | `/cartesian_command` | `geometry_msgs/msg/TwistStamped` | output | Cartesian velocity sent to `qontrol_controller`. |
 | `/joint_target_command` | `sensor_msgs/msg/JointState` | output | Named joint-position target sent to `qontrol_controller`. |
 | `/cartesian_manager/status` | `diagnostic_msgs/msg/DiagnosticStatus` | output | Latched manager state: `geometric`, `behaviour`, `target` and enabled `inputs`, published on change. |
+| `~/intent_scale` | `std_msgs/msg/Float64` | output | Current intent scale, only while `behaviour/intent_scaling` is active. |
 
 ## Mode Requests
 
@@ -379,6 +380,9 @@ remains the top speed. Angular commands are not scaled. `behaviour/passthrough` 
 
 With these values a full push reaches full scale in about 1.6 s; a push under half the stick never does. All four
 can be changed at runtime with `ros2 param set`.
+
+While the behaviour is active, the current scale in `[min_scale, 1]` is published at about 20 Hz on
+`~/intent_scale` (`std_msgs/msg/Float64`) for a UI gauge. In any other behaviour nothing is published.
 
 ## Joint Targets
 

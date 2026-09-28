@@ -13,6 +13,7 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/string.hpp"
 
@@ -23,6 +24,8 @@ namespace ros_cartesian_manager
     constexpr const char *kOutputCommandPublisher = "output_command";
     constexpr const char *kJointTargetCommandPublisher = "joint_target_command";
     constexpr const char *kStatusPublisher = "status";
+    constexpr const char *kIntentScalePublisher = "intent_scale";
+    constexpr double kIntentScalePeriodSec = 0.05;
     constexpr const char *kBehaviourPassthroughMode = "behaviour/passthrough";
     constexpr const char *kJointTargetModePrefix = "behaviour/joint_target/";
     constexpr const char *kPoseTargetModePrefix = "behaviour/pose_target/";
@@ -354,6 +357,8 @@ namespace ros_cartesian_manager
                                                               config_.topics.joint_target_command);
     topic_manager_.addPublisher<diagnostic_msgs::msg::DiagnosticStatus>(
         kStatusPublisher, "~/status", rclcpp::QoS(1).reliable().transient_local());
+    topic_manager_.addPublisher<std_msgs::msg::Float64>(kIntentScalePublisher,
+                                                        config_.topics.intent_scale);
   }
 
   void CartesianManagerROS::setupSubscribers()
@@ -587,5 +592,24 @@ namespace ros_cartesian_manager
     topic_manager_.publish(kOutputCommandPublisher,
                            commandToMsg(command, now, config_.output_frame_id));
     publishStatus();
+    publishIntentScale(now);
+  }
+
+  void CartesianManagerROS::publishIntentScale(const rclcpp::Time &now)
+  {
+    const auto scale = manager_.intentScale();
+    if (!scale)
+    {
+      last_intent_scale_stamp_.reset();
+      return;
+    }
+    if (last_intent_scale_stamp_ &&
+        (now - *last_intent_scale_stamp_).seconds() < kIntentScalePeriodSec)
+      return;
+
+    last_intent_scale_stamp_ = now;
+    std_msgs::msg::Float64 msg;
+    msg.data = *scale;
+    topic_manager_.publish(kIntentScalePublisher, msg);
   }
 } // namespace ros_cartesian_manager
