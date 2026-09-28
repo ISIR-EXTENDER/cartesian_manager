@@ -29,6 +29,11 @@ namespace ros_cartesian_manager
     std::string ee_jac;
     std::string joint_states;
     std::string joint_target_command;
+    std::string max_linear_velocity;
+    std::string max_angular_velocity;
+    std::string shared_control_goals;
+    std::string shared_control_confidences;
+    std::string shared_control_soft_goal;
   };
 
   /**
@@ -44,6 +49,7 @@ namespace ros_cartesian_manager
     TopicConfig topics;
     std::string output_frame_id;
     std::string default_input_frame_id;
+    manager_core::CommandScale command_scale;
     manager_core::ManagerConfig manager;
   };
 

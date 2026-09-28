@@ -12,9 +12,11 @@
 
 #include <sensor_msgs/msg/joint_state.hpp>
 
+#include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 
+#include <std_msgs/msg/float64.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_msgs/msg/string.hpp>
 
@@ -41,6 +43,9 @@ namespace ros_cartesian_manager
     void joystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void tabletSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void visualServoingSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
+    void sharedControlGoalsCallback(const geometry_msgs::msg::PoseArray &msg);
+    void maxLinearVelocityCallback(const std_msgs::msg::Float64 &msg);
+    void maxAngularVelocityCallback(const std_msgs::msg::Float64 &msg);
 
   private:
     void setupSubscribers();
@@ -54,6 +59,7 @@ namespace ros_cartesian_manager
         const std::vector<rclcpp::Parameter> &parameters) const;
     void publishJointTargetCommand(const std::optional<manager_core::JointTargetCommand> &command);
     void publishStatus();
+    void publishSharedControlState(const rclcpp::Time &stamp);
 
     TopicManager topic_manager_;
     manager_core::Manager manager_;

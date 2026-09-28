@@ -88,6 +88,41 @@ cartesian_manager:
       default_value: "/cartesian_command"
       read_only: true
       description: "Topic used by the command manager output publisher."
+    max_linear_velocity:
+      type: string
+      default_value: "/explorer_user_interfaces/rqt_armcontrol/max_linear_speed"
+      read_only: true
+      description: "std_msgs/Float64 topic that changes the downstream linear speed live. Keeps command_scale in sync. Empty disables it."
+    max_angular_velocity:
+      type: string
+      default_value: "/explorer_user_interfaces/rqt_armcontrol/max_angular_speed"
+      read_only: true
+      description: "std_msgs/Float64 topic that changes the downstream angular speed live. Keeps command_scale in sync. Empty disables it."
+    shared_control_goals:
+      type: string
+      default_value: "/shared_control/goals"
+      read_only: true
+      description: "geometry_msgs/PoseArray holding the current shared-control goals, in frames.base_frame. Each message replaces the previous set."
+    shared_control_confidences:
+      type: string
+      default_value: "/shared_control/confidences"
+      read_only: true
+      description: "Float64MultiArray of goal confidences while shared control is active. The dimension label lists the goal ids, comma-separated."
+    shared_control_soft_goal:
+      type: string
+      default_value: "/shared_control/soft_goal"
+      read_only: true
+      description: "Confidence-weighted goal pose while shared control is active."
+
+  command_scale:
+    max_linear_velocity:
+      type: double
+      default_value: 0.1
+      description: "Linear speed in m/s a unit command reaches downstream. Match qontrol command_max_linear_velocity."
+    max_angular_velocity:
+      type: double
+      default_value: 0.2
+      description: "Angular speed in rad/s a unit command reaches downstream. Match qontrol command_max_angular_velocity."
 
   inputs:
     sources:
@@ -206,3 +241,56 @@ cartesian_manager:
       orientation_tolerance:
         type: double
         default_value: 0.05
+
+    shared_control:
+      goal_names:
+        type: string_array
+        default_value: [""]
+        read_only: true
+        description: "Names of static goals. Dynamic goals arrive on topics.shared_control_goals."
+      positions:
+        type: double_array
+        default_value: [0.0, 0.0, 0.0]
+        read_only: true
+        description: "Flattened XYZ positions in frames.base_frame, three values per goal."
+      orientations:
+        type: double_array
+        default_value: [0.0, 0.0, 0.0, 1.0]
+        read_only: true
+        description: "Flattened XYZW quaternions, four values per goal."
+      alpha_conf:
+        type: double
+        default_value: 1.5
+        description: "Confidence integration gain in 1/s."
+      theta_l_deg:
+        type: double
+        default_value: 30.0
+        description: "Half-angle of the cone around a goal direction inside which its confidence rises, in degrees."
+      v_j_max:
+        type: double
+        default_value: 0.055
+        description: "Commanded speed in m/s at which confidences integrate at full rate."
+      gamma:
+        type: double
+        default_value: 2.0
+        description: "Gain on the goal-aligned velocity component when assistance is full."
+      r1:
+        type: double
+        default_value: 0.04
+        description: "Distance gate radius in m. Assistance ramps from the smaller of r1 and r2 to the larger."
+      r2:
+        type: double
+        default_value: 0.02
+        description: "Distance gate radius in m. Confidences freeze inside the smaller of r1 and r2 around any goal."
+      theta1_deg:
+        type: double
+        default_value: 15.0
+        description: "Orientation error in degrees above which rotation assistance is full."
+      theta2_deg:
+        type: double
+        default_value: 5.0
+        description: "Orientation error in degrees below which rotation assistance is off."
+      goal_match_distance:
+        type: double
+        default_value: 0.05
+        description: "A goal within this distance in m of a goal from the previous set keeps its confidence."

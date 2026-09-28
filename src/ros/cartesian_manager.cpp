@@ -1,6 +1,7 @@
 #include "cartesian_manager/ros/cartesian_manager.hpp"
 
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <stdexcept>
@@ -9,10 +10,12 @@
 
 #include "diagnostic_msgs/msg/diagnostic_status.hpp"
 #include "diagnostic_msgs/msg/key_value.hpp"
+#include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/string.hpp"
 
@@ -26,6 +29,9 @@ namespace ros_cartesian_manager
     constexpr const char *kBehaviourPassthroughMode = "behaviour/passthrough";
     constexpr const char *kJointTargetModePrefix = "behaviour/joint_target/";
     constexpr const char *kPoseTargetModePrefix = "behaviour/pose_target/";
+    constexpr const char *kSharedControlMode = "behaviour/shared_control";
+    constexpr const char *kSharedControlConfidencesPublisher = "shared_control_confidences";
+    constexpr const char *kSharedControlSoftGoalPublisher = "shared_control_soft_goal";
 
     std::chrono::nanoseconds timerPeriod(double update_rate_hz)
     {
@@ -52,6 +58,14 @@ namespace ros_cartesian_manager
       return true;
     }
 
+    bool sharedControlTuningEqual(const manager_core::SharedControlConfig &a,
+                                  const manager_core::SharedControlConfig &b)
+    {
+      return a.alpha_conf == b.alpha_conf && a.theta_l == b.theta_l && a.v_j_max == b.v_j_max &&
+             a.gamma == b.gamma && a.r1 == b.r1 && a.r2 == b.r2 && a.theta1 == b.theta1 &&
+             a.theta2 == b.theta2 && a.goal_match_distance == b.goal_match_distance;
+    }
+
     bool tuningConfigsEqual(const manager_core::ManagerConfig &lhs,
                             const manager_core::ManagerConfig &rhs)
     {
@@ -67,7 +81,8 @@ namespace ros_cartesian_manager
              a.max_linear_velocity == b.max_linear_velocity &&
              a.max_angular_velocity == b.max_angular_velocity &&
              a.position_tolerance == b.position_tolerance &&
-             a.orientation_tolerance == b.orientation_tolerance;
+             a.orientation_tolerance == b.orientation_tolerance &&
+             sharedControlTuningEqual(lhs.shared_control, rhs.shared_control);
     }
 
     double stampSec(const builtin_interfaces::msg::Time &stamp, const double fallback_sec)
@@ -146,6 +161,8 @@ namespace ros_cartesian_manager
         return "behaviour/joint_target";
       case manager_core::Behaviours::POSE_TARGET:
         return "behaviour/pose_target";
+      case manager_core::Behaviours::SHARED_CONTROL:
+        return "behaviour/shared_control";
       }
       return {};
     }
@@ -280,6 +297,10 @@ namespace ros_cartesian_manager
     const bool tuning_changed = initial || !tuningConfigsEqual(config_.manager, config.manager);
     const bool input_changed =
         initial || !inputConfigsEqual(config_.manager.inputs, config.manager.inputs);
+    // A parameter change overrides the last speed seen on the max-velocity topics.
+    if (initial || config_.command_scale.linear != config.command_scale.linear ||
+        config_.command_scale.angular != config.command_scale.angular)
+      robot_context_.command_scale = config.command_scale;
     config_ = config;
 
     if (initial)
@@ -348,6 +369,10 @@ namespace ros_cartesian_manager
                                                               config_.topics.joint_target_command);
     topic_manager_.addPublisher<diagnostic_msgs::msg::DiagnosticStatus>(
         kStatusPublisher, "~/status", rclcpp::QoS(1).reliable().transient_local());
+    topic_manager_.addPublisher<std_msgs::msg::Float64MultiArray>(
+        kSharedControlConfidencesPublisher, config_.topics.shared_control_confidences);
+    topic_manager_.addPublisher<geometry_msgs::msg::PoseStamped>(
+        kSharedControlSoftGoalPublisher, config_.topics.shared_control_soft_goal);
   }
 
   void CartesianManagerROS::setupSubscribers()
@@ -376,6 +401,18 @@ namespace ros_cartesian_manager
         "joint_states", config_.topics.joint_states,
         std::bind(&CartesianManagerROS::jointStatesSubscriberCallback, this,
                   std::placeholders::_1));
+
+    topic_manager_.addSubscriber<geometry_msgs::msg::PoseArray>(
+        "shared_control_goals", config_.topics.shared_control_goals,
+        std::bind(&CartesianManagerROS::sharedControlGoalsCallback, this, std::placeholders::_1));
+    if (!config_.topics.max_linear_velocity.empty())
+      topic_manager_.addSubscriber<std_msgs::msg::Float64>(
+          "max_linear_velocity", config_.topics.max_linear_velocity,
+          std::bind(&CartesianManagerROS::maxLinearVelocityCallback, this, std::placeholders::_1));
+    if (!config_.topics.max_angular_velocity.empty())
+      topic_manager_.addSubscriber<std_msgs::msg::Float64>(
+          "max_angular_velocity", config_.topics.max_angular_velocity,
+          std::bind(&CartesianManagerROS::maxAngularVelocityCallback, this, std::placeholders::_1));
 
     for (const auto &input : config_.manager.inputs)
     {
@@ -454,6 +491,43 @@ namespace ros_cartesian_manager
     }
   }
 
+  void CartesianManagerROS::sharedControlGoalsCallback(const geometry_msgs::msg::PoseArray &msg)
+  {
+    const auto frame_id = frameOrDefault(msg.header.frame_id, config_.manager.frames.base_frame);
+    if (frame_id != config_.manager.frames.base_frame)
+    {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+                           "Ignoring shared-control goals in frame '%s'; expected '%s'",
+                           frame_id.c_str(), config_.manager.frames.base_frame.c_str());
+      return;
+    }
+
+    std::vector<manager_core::SharedControlGoal> goals;
+    goals.reserve(msg.poses.size());
+    for (const auto &pose : msg.poses)
+    {
+      manager_core::SharedControlGoal goal;
+      goal.id = "goal_" + std::to_string(goals.size());
+      goal.position = Eigen::Vector3d(pose.position.x, pose.position.y, pose.position.z);
+      goal.orientation = Eigen::Quaterniond(pose.orientation.w, pose.orientation.x,
+                                            pose.orientation.y, pose.orientation.z);
+      goals.push_back(std::move(goal));
+    }
+    manager_.setSharedControlGoals(goals);
+  }
+
+  void CartesianManagerROS::maxLinearVelocityCallback(const std_msgs::msg::Float64 &msg)
+  {
+    if (std::isfinite(msg.data) && msg.data > 0.0)
+      robot_context_.command_scale.linear = msg.data;
+  }
+
+  void CartesianManagerROS::maxAngularVelocityCallback(const std_msgs::msg::Float64 &msg)
+  {
+    if (std::isfinite(msg.data) && msg.data > 0.0)
+      robot_context_.command_scale.angular = msg.data;
+  }
+
   void CartesianManagerROS::jointStatesSubscriberCallback(const sensor_msgs::msg::JointState &msg)
   {
     robot_context_.joint_names = msg.name;
@@ -499,6 +573,8 @@ namespace ros_cartesian_manager
     const bool joint_target_request = normalized_mode_request.rfind(kJointTargetModePrefix, 0) == 0;
     const bool passthrough_request = normalized_mode_request == kBehaviourPassthroughMode;
     const bool pose_target_request = normalized_mode_request.rfind(kPoseTargetModePrefix, 0) == 0;
+    const bool shared_control_request =
+        normalized_mode_request.rfind(kSharedControlMode, 0) == 0;
 
     if (!manager_.setMode(normalized_mode_request))
     {
@@ -513,7 +589,7 @@ namespace ros_cartesian_manager
       return;
     }
 
-    if (passthrough_request || pose_target_request)
+    if (passthrough_request || pose_target_request || shared_control_request)
       publishJointTargetCommand(std::nullopt);
   }
 
@@ -580,5 +656,36 @@ namespace ros_cartesian_manager
     topic_manager_.publish(kOutputCommandPublisher,
                            commandToMsg(command, now, config_.output_frame_id));
     publishStatus();
+    publishSharedControlState(now);
+  }
+
+  void CartesianManagerROS::publishSharedControlState(const rclcpp::Time &stamp)
+  {
+    const auto state = manager_.sharedControlState(robot_context_);
+    if (!state)
+      return;
+
+    // One dimension whose label lists the goal ids, comma-separated, in data order.
+    std_msgs::msg::Float64MultiArray confidences;
+    confidences.data = state->confidences;
+    std_msgs::msg::MultiArrayDimension dimension;
+    for (const auto &goal_id : state->goal_ids)
+      dimension.label += (dimension.label.empty() ? "" : ",") + goal_id;
+    dimension.size = static_cast<std::uint32_t>(state->confidences.size());
+    dimension.stride = dimension.size;
+    confidences.layout.dim.push_back(dimension);
+    topic_manager_.publish(kSharedControlConfidencesPublisher, confidences);
+
+    geometry_msgs::msg::PoseStamped soft_goal;
+    soft_goal.header.stamp = stamp;
+    soft_goal.header.frame_id = config_.manager.frames.base_frame;
+    soft_goal.pose.position.x = state->soft_goal.position.x();
+    soft_goal.pose.position.y = state->soft_goal.position.y();
+    soft_goal.pose.position.z = state->soft_goal.position.z();
+    soft_goal.pose.orientation.w = state->soft_goal.orientation.w();
+    soft_goal.pose.orientation.x = state->soft_goal.orientation.x();
+    soft_goal.pose.orientation.y = state->soft_goal.orientation.y();
+    soft_goal.pose.orientation.z = state->soft_goal.orientation.z();
+    topic_manager_.publish(kSharedControlSoftGoalPublisher, soft_goal);
   }
 } // namespace ros_cartesian_manager

@@ -233,6 +233,75 @@ namespace ros_cartesian_manager
       return config;
     }
 
+    double degreesToRadians(double degrees)
+    {
+      return degrees * M_PI / 180.0;
+    }
+
+    manager_core::SharedControlConfig makeSharedControlConfig(const cartesian_manager::Params &params)
+    {
+      const auto &source = params.behaviours.shared_control;
+      manager_core::SharedControlConfig config;
+      config.alpha_conf = source.alpha_conf;
+      config.theta_l = degreesToRadians(source.theta_l_deg);
+      config.v_j_max = source.v_j_max;
+      config.gamma = source.gamma;
+      config.r1 = source.r1;
+      config.r2 = source.r2;
+      config.theta1 = degreesToRadians(source.theta1_deg);
+      config.theta2 = degreesToRadians(source.theta2_deg);
+      config.goal_match_distance = source.goal_match_distance;
+      requireNonNegative(config.goal_match_distance, "behaviours.shared_control.goal_match_distance");
+      requireNonNegative(config.alpha_conf, "behaviours.shared_control.alpha_conf");
+      requirePositive(source.theta_l_deg, "behaviours.shared_control.theta_l_deg");
+      requireAtMost(source.theta_l_deg, 90.0, "behaviours.shared_control.theta_l_deg");
+      requirePositive(config.v_j_max, "behaviours.shared_control.v_j_max");
+      requirePositive(config.gamma, "behaviours.shared_control.gamma");
+      requirePositive(config.r1, "behaviours.shared_control.r1");
+      requirePositive(config.r2, "behaviours.shared_control.r2");
+      if (config.r1 == config.r2)
+        throw std::invalid_argument("behaviours.shared_control.r1 and r2 must differ");
+      requireNonNegative(source.theta2_deg, "behaviours.shared_control.theta2_deg");
+      if (!(source.theta1_deg > source.theta2_deg) || !std::isfinite(source.theta1_deg))
+        throw std::invalid_argument(
+            "behaviours.shared_control.theta1_deg must be finite and > theta2_deg");
+
+      const auto names = normalizedNonEmptyNames(source.goal_names);
+      if (names.size() != source.goal_names.size() &&
+          !(source.goal_names.size() == 1 && source.goal_names.front().empty()))
+      {
+        throw std::invalid_argument("behaviours.shared_control.goal_names contains an empty name");
+      }
+      requireUniqueNames(names, "behaviours.shared_control.goal_names");
+      if (names.empty())
+        return config;
+      if (source.positions.size() != names.size() * 3 ||
+          source.orientations.size() != names.size() * 4)
+      {
+        throw std::invalid_argument("behaviours.shared_control arrays must contain three position "
+                                    "values and four orientation values per goal");
+      }
+      for (std::size_t index = 0; index < names.size(); ++index)
+      {
+        manager_core::SharedControlGoal goal;
+        goal.id = names[index];
+        goal.position =
+            Eigen::Vector3d(source.positions[index * 3], source.positions[index * 3 + 1],
+                            source.positions[index * 3 + 2]);
+        goal.orientation = Eigen::Quaterniond(
+            source.orientations[index * 4 + 3], source.orientations[index * 4],
+            source.orientations[index * 4 + 1], source.orientations[index * 4 + 2]);
+        if (!goal.position.allFinite() || !goal.orientation.coeffs().allFinite() ||
+            goal.orientation.norm() <= 1.0e-9)
+        {
+          throw std::invalid_argument("behaviours.shared_control contains a non-finite goal or "
+                                      "zero quaternion");
+        }
+        config.goals.push_back(std::move(goal));
+      }
+      return config;
+    }
+
     manager_core::JointTargetBehaviourConfig makeJointTargetConfig(
         const cartesian_manager::Params &params)
     {
@@ -300,6 +369,28 @@ namespace ros_cartesian_manager
         params.behaviours.pose_targets.position_tolerance = param.as_double();
       else if (name == "behaviours.pose_targets.orientation_tolerance")
         params.behaviours.pose_targets.orientation_tolerance = param.as_double();
+      else if (name == "command_scale.max_linear_velocity")
+        params.command_scale.max_linear_velocity = param.as_double();
+      else if (name == "command_scale.max_angular_velocity")
+        params.command_scale.max_angular_velocity = param.as_double();
+      else if (name == "behaviours.shared_control.alpha_conf")
+        params.behaviours.shared_control.alpha_conf = param.as_double();
+      else if (name == "behaviours.shared_control.theta_l_deg")
+        params.behaviours.shared_control.theta_l_deg = param.as_double();
+      else if (name == "behaviours.shared_control.v_j_max")
+        params.behaviours.shared_control.v_j_max = param.as_double();
+      else if (name == "behaviours.shared_control.gamma")
+        params.behaviours.shared_control.gamma = param.as_double();
+      else if (name == "behaviours.shared_control.r1")
+        params.behaviours.shared_control.r1 = param.as_double();
+      else if (name == "behaviours.shared_control.r2")
+        params.behaviours.shared_control.r2 = param.as_double();
+      else if (name == "behaviours.shared_control.theta1_deg")
+        params.behaviours.shared_control.theta1_deg = param.as_double();
+      else if (name == "behaviours.shared_control.theta2_deg")
+        params.behaviours.shared_control.theta2_deg = param.as_double();
+      else if (name == "behaviours.shared_control.goal_match_distance")
+        params.behaviours.shared_control.goal_match_distance = param.as_double();
     }
     return params;
   }
@@ -323,6 +414,11 @@ namespace ros_cartesian_manager
     config.topics.joint_states = params.topics.joint_states;
     config.topics.joint_target_command = params.topics.joint_target_command;
     config.topics.output_command = params.topics.output_command;
+    config.topics.max_linear_velocity = params.topics.max_linear_velocity;
+    config.topics.max_angular_velocity = params.topics.max_angular_velocity;
+    config.topics.shared_control_goals = params.topics.shared_control_goals;
+    config.topics.shared_control_confidences = params.topics.shared_control_confidences;
+    config.topics.shared_control_soft_goal = params.topics.shared_control_soft_goal;
 
     requireNonEmpty(config.topics.mode_request, "topics.mode_request");
     requireNonEmpty(config.topics.pose_target, "topics.pose_target");
@@ -332,6 +428,13 @@ namespace ros_cartesian_manager
     requireNonEmpty(config.topics.joint_states, "topics.joint_states");
     requireNonEmpty(config.topics.joint_target_command, "topics.joint_target_command");
     requireNonEmpty(config.topics.output_command, "topics.output_command");
+    requireNonEmpty(config.topics.shared_control_goals, "topics.shared_control_goals");
+    requireNonEmpty(config.topics.shared_control_confidences, "topics.shared_control_confidences");
+    requireNonEmpty(config.topics.shared_control_soft_goal, "topics.shared_control_soft_goal");
+    config.command_scale.linear = params.command_scale.max_linear_velocity;
+    config.command_scale.angular = params.command_scale.max_angular_velocity;
+    requirePositive(config.command_scale.linear, "command_scale.max_linear_velocity");
+    requirePositive(config.command_scale.angular, "command_scale.max_angular_velocity");
 
     config.output_frame_id = params.frames.output_frame_id;
     config.default_input_frame_id = params.frames.default_input_frame_id;
@@ -376,6 +479,7 @@ namespace ros_cartesian_manager
     config.manager.snake.gain = params.shapers.snake.gain;
     config.manager.joint_targets = makeJointTargetConfig(params);
     config.manager.pose_targets = makePoseTargetConfig(params, config.manager.frames);
+    config.manager.shared_control = makeSharedControlConfig(params);
     config.manager.rate_limiter.max_linear_acceleration =
         params.rate_limiter.max_linear_acceleration;
     config.manager.rate_limiter.max_angular_acceleration =
