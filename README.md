@@ -181,6 +181,8 @@ The launch file starts:
 - `joy_node`,
 - `joystick_mapper`.
 
+Pass `extra_params:=<file>` to load a parameter file after the robot's params file, for example to add `visual_servoing` to `inputs.sources` without editing the example config. Both launch files accept it.
+
 The launch/config files are installed from:
 
 - `bringup/launch/explorer.launch.py`
@@ -203,6 +205,7 @@ Default topics from `bringup/config/explorer_params.yaml`:
 | `/joint_states` | `sensor_msgs/msg/JointState` | input | Current joint state. |
 | `/cartesian_command` | `geometry_msgs/msg/TwistStamped` | output | Cartesian velocity sent to `qontrol_controller`. |
 | `/joint_target_command` | `sensor_msgs/msg/JointState` | output | Named joint-position target sent to `qontrol_controller`. |
+| `/cartesian_manager/status` | `diagnostic_msgs/msg/DiagnosticStatus` | output | Latched manager state: `geometric`, `behaviour`, `target` and enabled `inputs`, published on change. |
 
 ## Mode Requests
 
