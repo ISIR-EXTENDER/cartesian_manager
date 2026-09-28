@@ -1,9 +1,24 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+
+def launch_manager_node(context, controller_config):
+    parameters = [controller_config]
+    extra_params = LaunchConfiguration("extra_params").perform(context)
+    if extra_params:
+        parameters.append(extra_params)
+
+    return [Node(
+        package="cartesian_manager",
+        executable="cartesian_manager_node",
+        name="cartesian_manager",
+        output="screen",
+        parameters=parameters,
+    )]
+
 
 def generate_launch_description():
     use_simulation = LaunchConfiguration("use_simulation")
@@ -42,7 +57,12 @@ def generate_launch_description():
             "robot_ip",
             default_value="192.168.1.10",
             description="IP address by which the robot can be reached."
-        )
+        ),
+        DeclareLaunchArgument(
+            "extra_params",
+            default_value="",
+            description="Parameter file layered after kinova_params.yaml for the manager.",
+        ),
     ]
 
     urdf_cmd = Command(
@@ -125,12 +145,9 @@ def generate_launch_description():
         arguments=["qontrol_explorer", "--controller-manager", "/controller_manager"],
     )
 
-    manager_node = Node(
-        package="cartesian_manager",
-        executable="cartesian_manager_node",
-        name="cartesian_manager",
-        output="screen",
-        parameters=[controller_config],
+    manager_node = OpaqueFunction(
+        function=launch_manager_node,
+        args=[controller_config],
     )
 
     joint_state_broadcaster_spawner = Node(
