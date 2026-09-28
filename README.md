@@ -335,8 +335,8 @@ cartesian_manager:
 
 Send `behaviour/pose_target/ready` on `/mode_request` to start following the
 pose. The manager publishes Cartesian velocity toward the target without
-requiring a joystick command. The target frame must match the incoming
-`ee_pose` frame; use `frames.base_frame` for the usual setup. Velocity
+requiring a joystick command. Every target frame must equal `frames.base_frame`,
+and the incoming `ee_pose` frame must match it. Velocity
 becomes zero when both position and orientation are within tolerance, then
 the manager returns to input control on the next update. Send
 `behaviour/passthrough` to return to input control earlier. The controller uses

@@ -177,7 +177,7 @@ cartesian_manager:
         type: string_array
         default_value: [""]
         read_only: true
-        description: "Reference frame for each pose target, in target_names order."
+        description: "Reference frame for each pose target, in target_names order. Every entry must match frames.base_frame."
       positions:
         type: double_array
         default_value: [0.0, 0.0, 0.0]
