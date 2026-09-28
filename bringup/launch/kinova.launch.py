@@ -42,12 +42,7 @@ def generate_launch_description():
             "robot_ip",
             default_value="192.168.1.10",
             description="IP address by which the robot can be reached."
-        ),
-        DeclareLaunchArgument(
-            "publish_ee_pose_from_tf",
-            default_value="true",
-            description="Publish /ee_pose from TF until qontrol_controller provides it.",
-        ),
+        )
     ]
 
     urdf_cmd = Command(

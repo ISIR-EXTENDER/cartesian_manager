@@ -2,73 +2,99 @@ cartesian_manager:
   update_rate_hz:
     type: double
     default_value: 100.0
+    read_only: true
     description: "Command manager update loop frequency in Hz. Must be > 0 and <= 1000."
 
   frames:
     output_frame_id:
       type: string
       default_value: "base_link"
+      read_only: true
       description: "Frame id used on the published Cartesian command."
     default_input_frame_id:
       type: string
       default_value: "base_link"
+      read_only: true
       description: "Frame used when an incoming TwistStamped header.frame_id is empty."
     base_frame:
       type: string
       default_value: "base_link"
+      read_only: true
       description: "Base command frame. Inputs in this frame are summed without rotation."
     ee_frame:
       type: string
       default_value: "ft_frame"
+      read_only: true
       description: "End-effector command frame. Inputs in this frame are rotated into base with ee_pose."
     hybrid_frame:
       type: string
       default_value: "hybrid_frame"
+      read_only: true
       description: "Hybrid command frame. Inputs in this frame are rotated into base with the manager-computed hybrid pose."
 
   topics:
     joystick_command:
       type: string
       default_value: "/joystick_cartesian_command"
+      read_only: true
       description: "Topic carrying joystick Cartesian commands."
+    tablet_command:
+      type: string
+      default_value: "/tablet_cartesian_command"
+      read_only: true
+      description: "Topic carrying tablet Cartesian commands."
     visual_servoing_command:
       type: string
       default_value: "/visual_servoing_cartesian_command"
+      read_only: true
       description: "Topic carrying visual-servoing Cartesian commands."
     mode_request:
       type: string
       default_value: "/mode_request"
+      read_only: true
       description: "Topic carrying structured mode requests, such as geometric/snake or behaviour/joint_target/home."
+    pose_target:
+      type: string
+      default_value: "/pose_target"
+      read_only: true
+      description: "Topic carrying a dynamic Cartesian pose target to execute immediately."
     ee_pose:
       type: string
       default_value: "/ee_pose"
+      read_only: true
       description: "Topic carrying current end-effector pose."
     ee_vel:
       type: string
       default_value: "/ee_velocity"
+      read_only: true
       description: "Topic carrying current end-effector velocity."
     ee_jac:
       type: string
       default_value: "/ee_jac"
+      read_only: true
       description: "Topic carrying current end-effector Jacobian as a Float64MultiArray."
     joint_states:
       type: string
       default_value: "/joint_states"
+      read_only: true
       description: "Topic carrying current joint positions."
     joint_target_command:
       type: string
       default_value: "/joint_target_command"
+      read_only: true
       description: "Topic carrying named joint-position targets for the downstream QP controller."
     output_command:
       type: string
       default_value: "/cartesian_command"
+      read_only: true
       description: "Topic used by the command manager output publisher."
 
   inputs:
     sources:
       type: string_array
-      default_value: ["joystick", "visual_servoing"]
-      description: "Declared input sources. Supported values: joystick, visual_servoing."
+      default_value: ["joystick", "tablet", "visual_servoing"]
+      read_only: true
+      description: "Declared input sources. Supported values: joystick, tablet, visual_servoing."
     joystick:
       timeout_sec:
         type: double
@@ -78,6 +104,15 @@ cartesian_manager:
         type: bool
         default_value: true
         description: "Whether joystick input is enabled at startup."
+    tablet:
+      timeout_sec:
+        type: double
+        default_value: 0.2
+        description: "Maximum tablet command age before it is ignored."
+      enabled:
+        type: bool
+        default_value: true
+        description: "Whether tablet input is enabled at startup."
     visual_servoing:
       timeout_sec:
         type: double
@@ -119,12 +154,55 @@ cartesian_manager:
       joint_names:
         type: string_array
         default_value: [""]
+        read_only: true
         description: "Joint names used by joint-target behaviours. Order must match the Jacobian columns."
       target_names:
         type: string_array
         default_value: ["home"]
+        read_only: true
         description: "Names for configured joint-space targets."
       positions:
         type: double_array
         default_value: [0.0]
+        read_only: true
         description: "Flattened target joint positions, in target_names order. Each target has joint_names.size() positions."
+
+    pose_targets:
+      target_names:
+        type: string_array
+        default_value: [""]
+        read_only: true
+        description: "Names for Cartesian pose targets."
+      frame_ids:
+        type: string_array
+        default_value: [""]
+        read_only: true
+        description: "Reference frame for each pose target, in target_names order. Every entry must match frames.base_frame."
+      positions:
+        type: double_array
+        default_value: [0.0, 0.0, 0.0]
+        read_only: true
+        description: "Flattened XYZ positions, three values per pose target."
+      orientations:
+        type: double_array
+        default_value: [0.0, 0.0, 0.0, 1.0]
+        read_only: true
+        description: "Flattened XYZW quaternions, four values per pose target."
+      linear_kp:
+        type: double
+        default_value: 1.0
+      angular_kp:
+        type: double
+        default_value: 1.0
+      max_linear_velocity:
+        type: double
+        default_value: 0.1
+      max_angular_velocity:
+        type: double
+        default_value: 0.2
+      position_tolerance:
+        type: double
+        default_value: 0.05
+      orientation_tolerance:
+        type: double
+        default_value: 0.05

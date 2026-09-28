@@ -28,6 +28,7 @@ add_library(${PROJECT_NAME}_ros
 add_library(${PROJECT_NAME}_core
   src/core/input_manager.cpp
   src/core/manager.cpp
+  src/core/shapers/behaviour/pose_target.cpp
   src/core/shapers/geometric/jaco.cpp
   src/core/shapers/geometric/snake.cpp
   src/core/ratelimiter.cpp

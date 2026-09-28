@@ -30,21 +30,21 @@ namespace ros_cartesian_manager
     explicit CartesianManagerROS(const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
 
     void modeRequestCallback(const std_msgs::msg::String &mode_request);
+    void poseTargetCallback(const geometry_msgs::msg::PoseStamped &pose_target);
 
     void jointStatesSubscriberCallback(const sensor_msgs::msg::JointState &msg);
     void eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg);
     void eeVelSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void eeJacobianSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg);
-    void joystickcommandCallback(const geometry_msgs::msg::TwistStamped &msg);
+    void joystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
+    void tabletSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void visualServoingSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
 
   private:
     void setupSubscribers();
     void setupPublishers();
     void readParameters();
-    void applyConfig(const ManagerConfig &config, bool force_rebuild);
-    void clearRosInterfaces();
-    void recreateTimer();
+    void applyConfig(const ManagerConfig &config, bool initial);
     void refreshParameters();
     void updateVelocity();
 

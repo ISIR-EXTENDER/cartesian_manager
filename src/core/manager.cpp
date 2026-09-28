@@ -19,9 +19,8 @@ namespace manager_core
       while (std::getline(stream, part, '/'))
       {
         if (part.empty())
-        {
           return {};
-        }
+
         parts.push_back(part);
       }
 
@@ -33,25 +32,41 @@ namespace manager_core
   {
     geometric_shapers_.clear();
     behaviours_.clear();
+    rate_limiter_.reset();
 
     registerGeometricShaper(Geometrics::JACO, std::make_unique<JacoShaper>(config.jaco));
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
-    rate_limiter_config_ = config.rate_limiter;
-    rate_limiter_.reset();
+    registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
+
+    if (behaviour_state_ == Behaviours::POSE_TARGET)
+      behaviour_state_ = Behaviours::PASSTHROUGH;
 
     if (behaviour_state_ == Behaviours::JOINT_TARGET && !jointTargetByName(joint_target_name_))
-    {
       behaviour_state_ = Behaviours::PASSTHROUGH;
-    }
 
-    rate_limiter_.setConfig(rate_limiter_config_);
+    rate_limiter_.setConfig(config.rate_limiter);
     input_manager_.setFramesConfig(config.frames);
+    configureInputChannels(config.inputs);
+  }
+
+  void Manager::updateTuning(const ManagerConfig &config)
+  {
+    registerGeometricShaper(Geometrics::JACO, std::make_unique<JacoShaper>(config.jaco));
+    registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
+    static_cast<PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
+        .configure(config.pose_targets);
+    rate_limiter_.setConfig(config.rate_limiter);
   }
 
   void Manager::addInputChannel(InputSource source, double timeout_sec, bool enabled)
   {
     input_manager_.addInputChannel(source, timeout_sec, enabled);
+  }
+
+  void Manager::configureInputChannels(const std::vector<InputConfig> &channels)
+  {
+    input_manager_.configureInputChannels(channels);
   }
 
   void Manager::clearInputChannels()
@@ -124,7 +139,31 @@ namespace manager_core
           return false;
         }
 
+        if (behaviour_state_ == Behaviours::POSE_TARGET)
+        {
+          behaviours_.at(Behaviours::POSE_TARGET)->reset();
+        }
         behaviour_state_ = Behaviours::PASSTHROUGH;
+        rate_limiter_.reset();
+        return true;
+      }
+
+      if (parts[1] == "pose_target")
+      {
+        if (parts.size() != 3)
+        {
+          return false;
+        }
+
+        const auto pose_target = behaviours_.find(Behaviours::POSE_TARGET);
+        if (pose_target == behaviours_.end() ||
+            !pose_target->second->start(parts[2], RobotContext{}))
+        {
+          return false;
+        }
+
+        behaviour_state_ = Behaviours::POSE_TARGET;
+        rate_limiter_.reset();
         return true;
       }
 
@@ -149,18 +188,37 @@ namespace manager_core
     return false;
   }
 
+  bool Manager::setPoseTarget(const CartesianPose &target, std::string *error)
+  {
+    const auto pose_target = behaviours_.find(Behaviours::POSE_TARGET);
+    if (pose_target == behaviours_.end())
+    {
+      if (error)
+      {
+        *error = "pose target behaviour is not configured";
+      }
+      return false;
+    }
+
+    auto &behaviour = static_cast<PoseTarget &>(*pose_target->second);
+    if (!behaviour.start(target, error))
+    {
+      return false;
+    }
+
+    behaviour_state_ = Behaviours::POSE_TARGET;
+    rate_limiter_.reset();
+    return true;
+  }
+
   std::optional<JointTargetCommand> Manager::activeJointTargetCommand() const
   {
     if (behaviour_state_ != Behaviours::JOINT_TARGET)
-    {
       return std::nullopt;
-    }
 
     const auto target = jointTargetByName(joint_target_name_);
     if (!target)
-    {
       return std::nullopt;
-    }
 
     JointTargetCommand command;
     command.name = target->name;
@@ -177,9 +235,7 @@ namespace manager_core
 
     const auto shaper = geometric_shapers_.find(geometric_state_);
     if (shaper == geometric_shapers_.end())
-    {
       return;
-    }
 
     command = shaper->second->update(command, context, dt_sec);
   }
@@ -192,9 +248,7 @@ namespace manager_core
 
     const auto behaviour = behaviours_.find(behaviour_state_);
     if (behaviour == behaviours_.end())
-    {
       return;
-    }
 
     command = behaviour->second->update(command, context, dt_sec);
   }
@@ -212,12 +266,8 @@ namespace manager_core
   const JointTarget *Manager::jointTargetByName(const std::string &target_name) const
   {
     for (const auto &target : joint_target_config_.targets)
-    {
       if (target.name == target_name)
-      {
         return &target;
-      }
-    }
 
     return nullptr;
   }
@@ -231,7 +281,24 @@ namespace manager_core
       return CartesianVelocity{};
     }
 
-    auto command = input_manager_.getFullCommand(now_sec, context);
+    if (behaviour_state_ == Behaviours::POSE_TARGET)
+    {
+      const auto &pose_target = behaviours_.at(Behaviours::POSE_TARGET);
+      if (pose_target->validate(context))
+      {
+        rate_limiter_.reset();
+        return CartesianVelocity{};
+      }
+      if (pose_target->isComplete(context))
+      {
+        setMode("behaviour/passthrough");
+        return CartesianVelocity{};
+      }
+    }
+
+    auto command = behaviour_state_ == Behaviours::POSE_TARGET
+                       ? std::optional<CartesianCommand>(CartesianCommand{})
+                       : input_manager_.getFullCommand(now_sec, context);
     if (command)
     {
       applyGeometric(*command, context, dt_sec);
@@ -240,21 +307,17 @@ namespace manager_core
       // Normalize the linear and angular components of the command
       const double lin_norm = command->linear.norm();
       if (lin_norm > 1.0)
-      {
         command->linear /= lin_norm;
-      }
+
       const double ang_norm = command->angular.norm();
       if (ang_norm > 1.0)
-      {
         command->angular /= ang_norm;
-      }
 
       rate_limiter_.update(*command, dt_sec);
     }
     else
-    {
       rate_limiter_.reset();
-    }
+
     return command;
   }
 

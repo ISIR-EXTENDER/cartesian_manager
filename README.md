@@ -4,7 +4,7 @@
 
 It has two jobs:
 
-1. Collect Cartesian velocity inputs, such as joystick and visual-servoing commands.
+1. Collect Cartesian velocity inputs, such as joystick, tablet, and visual-servoing commands.
 2. Apply the selected command mode, then publish either:
    - a shaped Cartesian velocity command for QP Cartesian control, or
    - a named joint-position target command for QP joint-target control.
@@ -61,7 +61,7 @@ cartesian_manager/
 Normal Cartesian command flow:
 
 ```text
-joystick / visual-servoing TwistStamped
+joystick / tablet / visual-servoing TwistStamped
         |
         v
 CartesianManagerROS subscribers
@@ -193,8 +193,10 @@ Default topics from `bringup/config/explorer_params.yaml`:
 | Topic | Type | Direction | Meaning |
 | --- | --- | --- | --- |
 | `/joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Joystick Cartesian velocity command. |
+| `/tablet_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Tablet Cartesian velocity command. |
 | `/visual_servoing_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Visual-servoing Cartesian velocity command. |
 | `/mode_request` | `std_msgs/msg/String` | input | Mode selection request. |
+| `/pose_target` | `geometry_msgs/msg/PoseStamped` | input | Dynamic Cartesian pose target executed immediately. |
 | `/ee_pose` | `geometry_msgs/msg/PoseStamped` | input | Current end-effector pose from `qontrol_controller`. |
 | `/ee_velocity` | `geometry_msgs/msg/TwistStamped` | input | Current end-effector velocity from `qontrol_controller`. |
 | `/ee_jac` | `std_msgs/msg/Float64MultiArray` | input | Current end-effector Jacobian. |
@@ -214,6 +216,7 @@ ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'geometric/jaco'
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'geometric/snake'}"
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/passthrough'}"
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/joint_target/home'}"
+ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/pose_target/ready'}"
 ```
 
 Mode strings are normalized before parsing:
@@ -242,7 +245,7 @@ The main groups are:
 - `rate_limiter`
 - `behaviours`
 
-The node validates runtime parameter updates. Invalid updates are rejected by the ROS parameter callback before they are applied internally.
+Topic names, frames, the update rate, input source declarations, and target arrays are startup-only parameters. Change them in the launch configuration and restart the node. Input enable flags, timeouts, shaper gains and limits, rate limits, and pose-target gains and tolerances can change at runtime. The node validates those updates before applying them.
 
 ## Output Processing
 
@@ -307,6 +310,52 @@ Frame names are configured under `frames`:
 
 `cartesian_manager` does not use TF lookup. `ee_pose` must be stamped in `frames.base_frame`; the manager derives the hybrid pose from it.
 
+## Pose Targets
+
+Configure named Cartesian poses under `behaviours.pose_targets`. The arrays follow
+`target_names` order. Each target has one `frame_ids` entry, three XYZ
+`positions` values, and four XYZW `orientations` values:
+
+```yaml
+cartesian_manager:
+  ros__parameters:
+    behaviours:
+      pose_targets:
+        target_names: [ready]
+        frame_ids: [base_link]
+        positions: [0.4, 0.0, 0.3]
+        orientations: [0.0, 0.0, 0.0, 1.0]
+        linear_kp: 1.0
+        angular_kp: 1.0
+        max_linear_velocity: 0.1
+        max_angular_velocity: 0.2
+        position_tolerance: 0.01
+        orientation_tolerance: 0.05
+```
+
+Send `behaviour/pose_target/ready` on `/mode_request` to start following the
+pose. The manager publishes Cartesian velocity toward the target without
+requiring a joystick command. Every target frame must equal `frames.base_frame`,
+and the incoming `ee_pose` frame must match it. Velocity
+becomes zero when both position and orientation are within tolerance, then
+the manager returns to input control on the next update. Send
+`behaviour/passthrough` to return to input control earlier. The controller uses
+proportional gains only: `linear_kp` for position error and `angular_kp` for
+orientation error. Each command is capped by its configured maximum velocity.
+
+To execute a pose that was not configured at startup, publish it directly on
+`/pose_target`:
+
+```bash
+ros2 topic pub --once /pose_target geometry_msgs/msg/PoseStamped   "{header: {frame_id: 'base_link'}, pose: {position: {x: 0.6, y: 0.270, z: 0.32}, orientation: {x: -0.22, y: 0.85, z: 0.41, w: 0.45}}}"
+```
+
+The pose is executed immediately and replaces any pose target already in progress. Its
+`header.frame_id` must be the configured `frames.base_frame`; empty or different frames are
+rejected because the manager does not perform TF lookups. Non-finite poses and zero quaternions
+are also rejected, while valid quaternions are normalized. Named YAML targets and
+`behaviour/pose_target/<name>` remain available.
+
 ## Joint Targets
 
 Named joint targets are configured under:
@@ -316,22 +365,9 @@ cartesian_manager:
   ros__parameters:
     behaviours:
       joint_targets:
-        joint_names:
-          - joint_1
-          - joint_2
-          - joint_3
-          - joint_4
-          - joint_5
-          - joint_6
-        target_names:
-          - home
-        positions:
-          - 2.5
-          - 0.3
-          - -2.4
-          - 2.97
-          - 1.2
-          - -0.5
+        joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
+        target_names: [home]
+        positions: [2.5, 0.3, -2.4, 2.97, 1.2, -0.5]
 ```
 
 `positions` is flattened in `target_names` order. If there are 6 joints and 2 targets, the array must contain 12 values.
@@ -363,4 +399,3 @@ This keeps joint limits and QP constraints active while moving to a target.
 For extension details, see:
 
 - `docs/technical_guide.md`
-

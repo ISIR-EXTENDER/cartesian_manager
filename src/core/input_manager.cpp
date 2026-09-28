@@ -1,5 +1,8 @@
 #include "cartesian_manager/core/input_manager.hpp"
 
+#include <algorithm>
+#include <iterator>
+
 namespace manager_core
 {
   void InputManager::setFramesConfig(const std::string &ee_frame, const std::string &base_frame,
@@ -22,13 +25,25 @@ namespace manager_core
     channel.enabled = enabled;
   }
 
+  void InputManager::configureInputChannels(const std::vector<InputConfig> &channels)
+  {
+    for (auto input = inputs_.begin(); input != inputs_.end();)
+    {
+      const auto configured = std::find_if(
+          channels.begin(), channels.end(),
+          [source = input->first](const InputConfig &channel) { return channel.source == source; });
+      input = configured == channels.end() ? inputs_.erase(input) : std::next(input);
+    }
+
+    for (const auto &channel : channels)
+      addInputChannel(channel.source, channel.timeout_sec, channel.enabled);
+  }
+
   void InputManager::enableInputChannel(InputSource source)
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
       return;
-    }
 
     input->second.enabled = true;
   }
@@ -37,9 +52,7 @@ namespace manager_core
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
       return;
-    }
 
     input->second.enabled = false;
   }
@@ -48,9 +61,7 @@ namespace manager_core
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
       return false;
-    }
 
     return input->second.enabled;
   }
@@ -65,9 +76,7 @@ namespace manager_core
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
       return false;
-    }
 
     input->second.latest.command = command;
     input->second.latest.stamp_sec = stamp_sec;
@@ -79,17 +88,12 @@ namespace manager_core
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
       return false;
-    }
 
     const auto &channel = input->second;
     if (!channel.enabled || !channel.latest.received)
-    {
       return false;
-    }
-
-    return now_sec - channel.latest.stamp_sec <= channel.timeout;
+    return (now_sec - channel.latest.stamp_sec) <= channel.timeout;
   }
 
   std::optional<CartesianVelocity> InputManager::getCommand(InputSource source,
@@ -97,9 +101,7 @@ namespace manager_core
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end() || !hasValidCommand(source, now_sec))
-    {
       return std::nullopt;
-    }
 
     return input->second.latest.command;
   }
@@ -110,12 +112,8 @@ namespace manager_core
     sources.reserve(inputs_.size());
 
     for (const auto &[source, _] : inputs_)
-    {
       if (hasValidCommand(source, now_sec))
-      {
         sources.push_back(source);
-      }
-    }
 
     return sources;
   }
@@ -124,9 +122,7 @@ namespace manager_core
   {
     auto input = inputs_.find(source);
     if (input == inputs_.end())
-    {
       return;
-    }
 
     input->second.latest = TimedCartesianCommand{};
   }
@@ -134,9 +130,7 @@ namespace manager_core
   void InputManager::clearAllCommands()
   {
     for (auto &[_, channel] : inputs_)
-    {
       channel.latest = TimedCartesianCommand{};
-    }
   }
 
   void InputManager::clearInputChannels()
@@ -156,23 +150,16 @@ namespace manager_core
 
     const CartesianPose *pose = nullptr;
     if (command.frame_id == frames_names.ee_frame)
-    {
       pose = &context.ee_pose;
-    }
     else if (command.frame_id == frames_names.hybrid_frame)
-    {
       pose = &context.hybrid_frame_pose;
-    }
     else
-    {
       return std::nullopt;
-    }
 
     auto rotation = pose->orientation;
     if (rotation.norm() == 0.0)
-    {
       return std::nullopt;
-    }
+
     rotation.normalize();
 
     command.angular = rotation * input.angular;
@@ -185,34 +172,25 @@ namespace manager_core
   {
     CartesianVelocity command;
     command.frame_id = frames_names.base_frame;
-    double total_weight = 0.0;
 
+    bool has_valid_input = false;
     for (const auto &[source, channel] : inputs_)
     {
-      if (!hasValidCommand(source, now_sec) || channel.weight <= 0.0)
-      {
+      if (!hasValidCommand(source, now_sec))
         continue;
-      }
 
       const auto transformed_command = commandInBaseFrame(channel.latest.command, context);
       if (!transformed_command)
-      {
-        continue;
-      }
+        continue; 
 
-      command.linear += channel.weight * transformed_command->linear;
-      command.angular += channel.weight * transformed_command->angular;
-      total_weight += channel.weight;
+      has_valid_input = true;
+      command.linear += transformed_command->linear;
+      command.angular += transformed_command->angular;
     }
 
-    if (total_weight <= 0.0)
-    {
+    if (!has_valid_input)
       return std::nullopt;
-    }
-
-    command.linear /= total_weight;
-    command.angular /= total_weight;
-
+    
     return command;
   }
 } // namespace manager_core

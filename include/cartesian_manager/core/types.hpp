@@ -12,6 +12,7 @@ namespace manager_core
   enum class InputSource
   {
     JOYSTICK,
+    TABLET,
     VISUAL_SERVOING
   };
 
@@ -25,12 +26,13 @@ namespace manager_core
   enum class Behaviours
   {
     PASSTHROUGH,
-    JOINT_TARGET
+    JOINT_TARGET,
+    POSE_TARGET
   };
 
   struct FramesConfig
   {
-    std::string ee_frame{"ft_frame"};
+    std::string ee_frame{"effector_frame"};
     std::string base_frame{"base_link"};
     std::string hybrid_frame{"hybrid_frame"};
   };
@@ -63,7 +65,6 @@ namespace manager_core
     TimedCartesianCommand latest;
     double timeout{0.2};
     bool enabled{true};
-    double weight{1.};
   };
 
   struct HybridState

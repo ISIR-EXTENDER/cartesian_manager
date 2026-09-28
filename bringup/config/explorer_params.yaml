@@ -10,6 +10,12 @@ controller_manager:
       type: forward_command_controller/ForwardCommandController
       auto_start: false
 
+gripper_controller:
+  ros__parameters:
+    joints:
+      - right_finger_joint
+    interface_name: position
+
 qontrol_explorer:
   ros__parameters:
     robot_description_origin: robot_state_publisher
@@ -47,8 +53,10 @@ cartesian_manager:
 
     topics:
       joystick_command: /joystick_cartesian_command
+      tablet_command: /tablet_cartesian_command
       visual_servoing_command: /visual_servoing_cartesian_command
       mode_request: /mode_request
+      pose_target: /pose_target
       ee_pose: /ee_pose
       ee_vel: /ee_velocity
       ee_jac: /ee_jac
@@ -59,7 +67,11 @@ cartesian_manager:
     inputs:
       sources:
         - joystick
+        - tablet
       joystick:
+        timeout_sec: 0.2
+        enabled: true
+      tablet:
         timeout_sec: 0.2
         enabled: true
       visual_servoing:
@@ -79,19 +91,17 @@ cartesian_manager:
 
     behaviours:
       joint_targets:
-        joint_names:
-          - joint_1
-          - joint_2
-          - joint_3
-          - joint_4
-          - joint_5
-          - joint_6
-        target_names:
-          - home
-        positions:
-          - 2.5
-          - 0.3
-          - -2.4
-          - 2.97
-          - 1.2
-          - -0.5
+        joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
+        target_names: [home]
+        positions: [2.5, 0.3, -2.4, 2.97, 1.2, -0.5]
+      pose_targets:
+        target_names: [ready]
+        frame_ids: [base_link]
+        positions: [0.6, 0.27, 0.22]
+        orientations: [-0.22, 0.85, 0.11, 0.45]
+        linear_kp: 5.0
+        angular_kp: 1.0
+        max_linear_velocity: 0.5
+        max_angular_velocity: 0.2
+        position_tolerance: 0.01
+        orientation_tolerance: 0.05

@@ -8,6 +8,18 @@
 
 namespace manager_core
 {
+  /**
+   * @brief Runtime input-channel configuration for manager_core::Manager.
+   *
+   * One configured command source and its current timeout and enabled state.
+   */
+  struct InputConfig
+  {
+    InputSource source{InputSource::JOYSTICK};
+    double timeout_sec{0.2};
+    bool enabled{true};
+  };
+
   class InputManager
   {
 
@@ -18,6 +30,7 @@ namespace manager_core
     void setFramesConfig(const FramesConfig &frame_names);
 
     void addInputChannel(InputSource source, double timeout_sec, bool enabled = true);
+    void configureInputChannels(const std::vector<InputConfig> &channels);
 
     void enableInputChannel(InputSource source);
     void disableInputChannel(InputSource source);
