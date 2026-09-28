@@ -67,11 +67,11 @@ namespace ros_cartesian_manager
      * @tparam MessageT ROS message type published by this publisher.
      * @param name Internal publisher key.
      * @param topic_name ROS topic name.
-     * @param qos_history_depth QoS history depth passed to rclcpp.
+     * @param qos QoS passed to rclcpp, a history depth by default.
      */
     template <typename MessageT>
     void addPublisher(const std::string &name, const std::string &topic_name,
-                      std::size_t qos_history_depth = 10);
+                      const rclcpp::QoS &qos = rclcpp::QoS(10));
 
     /**
      * @brief Create and store a named subscriber.
@@ -153,7 +153,7 @@ namespace ros_cartesian_manager
 
   template <typename MessageT>
   void TopicManager::addPublisher(const std::string &name, const std::string &topic_name,
-                                  std::size_t qos_history_depth)
+                                  const rclcpp::QoS &qos)
   {
     if (topic_name.empty())
     {
@@ -162,7 +162,7 @@ namespace ros_cartesian_manager
       return;
     }
 
-    publishers_[name] = node_.create_publisher<MessageT>(topic_name, qos_history_depth);
+    publishers_[name] = node_.create_publisher<MessageT>(topic_name, qos);
   }
 
   template <typename MessageT>

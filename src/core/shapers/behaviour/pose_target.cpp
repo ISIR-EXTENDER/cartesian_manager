@@ -213,6 +213,11 @@ namespace manager_core
     return active_;
   }
 
+  std::string PoseTarget::activeTargetName() const
+  {
+    return active_target_name_;
+  }
+
   void PoseTarget::addPoseTarget(const std::string &name, const CartesianPose &pose)
   {
     pose_targets_[name] = pose;

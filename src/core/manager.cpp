@@ -227,6 +227,28 @@ namespace manager_core
     return command;
   }
 
+  Geometrics Manager::geometricState() const
+  {
+    return geometric_state_;
+  }
+
+  Behaviours Manager::behaviourState() const
+  {
+    return behaviour_state_;
+  }
+
+  std::string Manager::activeTargetName() const
+  {
+    if (behaviour_state_ == Behaviours::JOINT_TARGET)
+      return joint_target_name_;
+
+    if (behaviour_state_ == Behaviours::POSE_TARGET)
+      return static_cast<const PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
+          .activeTargetName();
+
+    return {};
+  }
+
   void Manager::applyGeometric(CartesianVelocity &command, const RobotContext &context,
                                double dt_sec)
   {
