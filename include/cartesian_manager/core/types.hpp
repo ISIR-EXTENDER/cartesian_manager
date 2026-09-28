@@ -27,7 +27,8 @@ namespace manager_core
   {
     PASSTHROUGH,
     JOINT_TARGET,
-    POSE_TARGET
+    POSE_TARGET,
+    SHARED_CONTROL
   };
 
   struct FramesConfig
@@ -77,6 +78,13 @@ namespace manager_core
     double released_input = 0.01;
   };
 
+  // Speed a unit command reaches downstream (qontrol command_max_*), for shapers written in SI.
+  struct CommandScale
+  {
+    double linear{1.0};  // m/s
+    double angular{1.0}; // rad/s
+  };
+
   struct RobotContext
   {
     CartesianPose ee_pose;
@@ -89,6 +97,8 @@ namespace manager_core
 
     HybridState hybrid_state;
     CartesianPose hybrid_frame_pose;
+
+    CommandScale command_scale;
 
     /**
      * @brief Updates the hybrid orientation frame used for angular input mapping.

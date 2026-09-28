@@ -38,6 +38,8 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
     registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
+    registerBehaviour(Behaviours::SHARED_CONTROL,
+                      std::make_unique<SharedControl>(config.shared_control));
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
       behaviour_state_ = Behaviours::PASSTHROUGH;
@@ -56,6 +58,7 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     static_cast<PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
         .configure(config.pose_targets);
+    sharedControl().configure(config.shared_control);
     rate_limiter_.setConfig(config.rate_limiter);
   }
 
@@ -144,6 +147,27 @@ namespace manager_core
           behaviours_.at(Behaviours::POSE_TARGET)->reset();
         }
         behaviour_state_ = Behaviours::PASSTHROUGH;
+        rate_limiter_.reset();
+        return true;
+      }
+
+      // Entering or leaving keeps the confidences; only the reset request clears them.
+      if (parts[1] == "shared_control")
+      {
+        if (parts.size() > 3 || (parts.size() == 3 && parts[2] != "reset"))
+        {
+          return false;
+        }
+
+        if (behaviour_state_ == Behaviours::POSE_TARGET)
+        {
+          behaviours_.at(Behaviours::POSE_TARGET)->reset();
+        }
+        if (parts.size() == 3)
+        {
+          sharedControl().reset();
+        }
+        behaviour_state_ = Behaviours::SHARED_CONTROL;
         rate_limiter_.reset();
         return true;
       }
@@ -283,6 +307,24 @@ namespace manager_core
   void Manager::registerBehaviour(Behaviours state, std::unique_ptr<Shaper> shaper)
   {
     behaviours_[state] = std::move(shaper);
+  }
+
+  void Manager::setSharedControlGoals(const std::vector<SharedControlGoal> &goals)
+  {
+    sharedControl().setGoals(goals);
+  }
+
+  std::optional<SharedControlState> Manager::sharedControlState(const RobotContext &context) const
+  {
+    if (behaviour_state_ != Behaviours::SHARED_CONTROL)
+      return std::nullopt;
+
+    return sharedControl().state(context);
+  }
+
+  SharedControl &Manager::sharedControl() const
+  {
+    return static_cast<SharedControl &>(*behaviours_.at(Behaviours::SHARED_CONTROL));
   }
 
   const JointTarget *Manager::jointTargetByName(const std::string &target_name) const

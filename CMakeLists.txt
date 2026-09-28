@@ -30,6 +30,7 @@ add_library(${PROJECT_NAME}_core
   src/core/input_manager.cpp
   src/core/manager.cpp
   src/core/shapers/behaviour/pose_target.cpp
+  src/core/shapers/behaviour/shared_control.cpp
   src/core/shapers/geometric/jaco.cpp
   src/core/shapers/geometric/snake.cpp
   src/core/ratelimiter.cpp
@@ -125,6 +126,10 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_shared_control test/test_shared_control.cpp)
+  target_link_libraries(test_shared_control ${PROJECT_NAME}_core)
 endif()
 
 ament_package()

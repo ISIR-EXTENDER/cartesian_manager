@@ -11,6 +11,7 @@
 #include "cartesian_manager/core/ratelimiter.hpp"
 #include "cartesian_manager/core/shapers/behaviour/joint_target.hpp"
 #include "cartesian_manager/core/shapers/behaviour/pose_target.hpp"
+#include "cartesian_manager/core/shapers/behaviour/shared_control.hpp"
 #include "cartesian_manager/core/shapers/geometric/jaco.hpp"
 #include "cartesian_manager/core/shapers/geometric/snake.hpp"
 #include "cartesian_manager/core/shapers/shaper.hpp"
@@ -25,6 +26,7 @@ namespace manager_core
     FramesConfig frames;
     JointTargetBehaviourConfig joint_targets;
     PoseTargetConfig pose_targets;
+    SharedControlConfig shared_control;
     RateLimiterConfig rate_limiter;
     std::vector<InputConfig> inputs;
   };
@@ -47,6 +49,8 @@ namespace manager_core
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
     std::optional<JointTargetCommand> activeJointTargetCommand() const;
+    void setSharedControlGoals(const std::vector<SharedControlGoal> &goals);
+    std::optional<SharedControlState> sharedControlState(const RobotContext &context) const;
 
     Geometrics geometricState() const;
     Behaviours behaviourState() const;
@@ -67,6 +71,7 @@ namespace manager_core
     void registerGeometricShaper(Geometrics state, std::unique_ptr<Shaper> shaper);
     void registerBehaviour(Behaviours state, std::unique_ptr<Shaper> shaper);
     const JointTarget *jointTargetByName(const std::string &target_name) const;
+    SharedControl &sharedControl() const;
 
     Geometrics geometric_state_{Geometrics::BOTH};
     Behaviours behaviour_state_{Behaviours::PASSTHROUGH};
