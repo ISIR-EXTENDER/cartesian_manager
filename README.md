@@ -37,6 +37,7 @@ cartesian_manager/
           snake.hpp
         behaviour/
           joint_target.hpp
+          shared_control.hpp
     ros/
       cartesian_manager.hpp
       parameter_parsing.hpp
@@ -206,6 +207,11 @@ Default topics from `bringup/config/explorer_params.yaml`:
 | `/cartesian_command` | `geometry_msgs/msg/TwistStamped` | output | Cartesian velocity sent to `qontrol_controller`. |
 | `/joint_target_command` | `sensor_msgs/msg/JointState` | output | Named joint-position target sent to `qontrol_controller`. |
 | `/cartesian_manager/status` | `diagnostic_msgs/msg/DiagnosticStatus` | output | Latched manager state: `geometric`, `behaviour`, `target` and enabled `inputs`, published on change. |
+| `/shared_control/goals` | `geometry_msgs/msg/PoseArray` | input | Current shared-control goals in `base_link`; each message replaces the set. |
+| `/explorer_user_interfaces/rqt_armcontrol/max_linear_speed` | `std_msgs/msg/Float64` | input | Downstream linear speed, followed to keep `command_scale` in sync. |
+| `/explorer_user_interfaces/rqt_armcontrol/max_angular_speed` | `std_msgs/msg/Float64` | input | Downstream angular speed, followed to keep `command_scale` in sync. |
+| `/shared_control/confidences` | `std_msgs/msg/Float64MultiArray` | output | Goal confidences while shared control is active; the dimension label lists the goal ids. |
+| `/shared_control/soft_goal` | `geometry_msgs/msg/PoseStamped` | output | Confidence-weighted goal while shared control is active. |
 
 ## Mode Requests
 
@@ -220,6 +226,8 @@ ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'geometric/snake
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/passthrough'}"
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/joint_target/home'}"
 ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/pose_target/ready'}"
+ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/shared_control'}"
+ros2 topic pub --once /mode_request std_msgs/msg/String "{data: 'behaviour/shared_control/reset'}"
 ```
 
 Mode strings are normalized before parsing:
@@ -358,6 +366,57 @@ The pose is executed immediately and replaces any pose target already in progres
 rejected because the manager does not perform TF lookups. Non-finite poses and zero quaternions
 are also rejected, while valid quaternions are normalized. Named YAML targets and
 `behaviour/pose_target/<name>` remain available.
+
+## Shared Control
+
+`behaviour/shared_control` blends the operator's twist with assistance towards the goal they seem to aim at.
+Each goal has a confidence that rises while the push points inside a cone around the goal direction. The
+confidence-weighted soft goal then shapes the command:
+
+- a command with a linear part is translation mode: it updates confidences, amplifies the goal-aligned
+  component by `gamma`, and turns the wrist so the goal orientation is reached with the position;
+- an angular-only command is rotation mode: it amplifies rotation towards the goal orientation and pivots
+  about the goal position.
+
+Far from any goal, or with no goal, the command passes through unchanged. Under `geometric/jaco`, the jaco
+angular command is the translation-mode baseline, so `geometric/jaco` with `behaviour/passthrough` is the
+unassisted condition to compare against. `geometric/snake` works the same way: near a goal, or with none,
+the snake turn passes through; with full assistance, the turn towards the goal orientation replaces it.
+
+Confidences survive every mode change. `behaviour/shared_control/reset` clears them and drops dynamic goals,
+for example between trials. Static goals come from `behaviours.shared_control.goal_names`, `positions` and
+`orientations`, laid out like the pose targets. Dynamic goals arrive as a `PoseArray` on
+`/shared_control/goals`. Each message is the whole set, so the publisher decides which goals exist and an
+empty array clears them. A goal within `goal_match_distance` of one in the previous set keeps its confidence,
+so a re-detected tag is not forgotten. In `/shared_control/confidences`, dynamic goals are `goal_<index>` in
+the order of the last array.
+
+```bash
+ros2 topic pub --once /shared_control/goals geometry_msgs/msg/PoseArray \
+  "{header: {frame_id: 'base_link'}, poses: [{position: {x: 0.6, y: 0.2, z: 0.3}, orientation: {w: 1.0}}]}"
+```
+
+The law is written in SI units, while the manager speaks in unit scale. `command_scale` must match
+`qontrol_controller`'s `command_max_linear_velocity` and `command_max_angular_velocity`; the manager also
+follows the max-speed topics that change them live. The shaper adds no filter of its own: the rate limiter
+conditions the output, and the confidence integration already smooths the intent estimate. An amplified
+command above unit scale is clipped by the output normalisation, which keeps its direction.
+
+```yaml
+    behaviours:
+      shared_control:
+        alpha_conf: 1.5      # confidence gain, 1/s
+        theta_l_deg: 30.0    # half-angle of the confidence cone
+        v_j_max: 0.055       # speed, in m/s, at which confidences integrate at full rate
+        gamma: 2.0           # gain on the goal-aligned component
+        r1: 0.04             # assistance ramps between r2 and r1, in m;
+        r2: 0.02             # confidences freeze within r2 of any goal
+        theta1_deg: 15.0     # rotation assistance ramps between theta2 and theta1
+        theta2_deg: 5.0
+        goal_match_distance: 0.05  # m
+```
+
+All tuning values and `command_scale` can be changed at runtime with `ros2 param set`.
 
 ## Joint Targets
 
