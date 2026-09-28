@@ -85,6 +85,16 @@ cartesian_manager:
       joint_states: /joint_states
       joint_target_command: /joint_target_command
       output_command: /cartesian_command
+      max_linear_velocity: /explorer_user_interfaces/rqt_armcontrol/max_linear_speed
+      max_angular_velocity: /explorer_user_interfaces/rqt_armcontrol/max_angular_speed
+      shared_control_goals: /shared_control/goals
+      shared_control_confidences: /shared_control/confidences
+      shared_control_soft_goal: /shared_control/soft_goal
+
+    # Must match qontrol command_max_*; the max-velocity topics keep it in sync afterwards.
+    command_scale:
+      max_linear_velocity: 0.05
+      max_angular_velocity: 0.4
 
     inputs:
       sources:
@@ -127,3 +137,14 @@ cartesian_manager:
         max_angular_velocity: 0.2
         position_tolerance: 0.01
         orientation_tolerance: 0.05
+      shared_control:
+        goal_names: [""]
+        alpha_conf: 1.5
+        theta_l_deg: 30.0
+        v_j_max: 0.055
+        gamma: 2.0
+        r1: 0.04
+        r2: 0.02
+        theta1_deg: 15.0
+        theta2_deg: 5.0
+        goal_match_distance: 0.05
