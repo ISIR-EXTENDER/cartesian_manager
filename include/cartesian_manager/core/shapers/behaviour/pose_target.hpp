@@ -44,6 +44,7 @@ namespace manager_core
 
     bool hasTarget(const std::string &name) const;
     bool active() const;
+    std::string activeTargetName() const;
     void addPoseTarget(const std::string &name, const CartesianPose &pose);
 
   private:

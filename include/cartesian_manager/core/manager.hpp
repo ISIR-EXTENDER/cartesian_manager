@@ -48,6 +48,10 @@ namespace manager_core
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
     std::optional<JointTargetCommand> activeJointTargetCommand() const;
 
+    Geometrics geometricState() const;
+    Behaviours behaviourState() const;
+    std::string activeTargetName() const;
+
     std::optional<CartesianVelocity> update(double now_sec, double dt_sec,
                                             const RobotContext &context);
 

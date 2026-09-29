@@ -8,6 +8,8 @@
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "rclcpp/rclcpp.hpp"
 
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+
 #include <sensor_msgs/msg/joint_state.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -51,6 +53,7 @@ namespace ros_cartesian_manager
     rcl_interfaces::msg::SetParametersResult validateParameterUpdate(
         const std::vector<rclcpp::Parameter> &parameters) const;
     void publishJointTargetCommand(const std::optional<manager_core::JointTargetCommand> &command);
+    void publishStatus();
 
     TopicManager topic_manager_;
     manager_core::Manager manager_;
@@ -61,5 +64,6 @@ namespace ros_cartesian_manager
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_validator_handle_;
     cartesian_manager::Params params_;
     ManagerConfig config_;
+    std::optional<diagnostic_msgs::msg::DiagnosticStatus> last_status_;
   };
 } // namespace ros_cartesian_manager

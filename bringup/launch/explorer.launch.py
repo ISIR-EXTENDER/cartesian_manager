@@ -1,10 +1,25 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, TimerAction
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+
+
+def launch_manager_node(context, controller_config):
+    parameters = [controller_config]
+    extra_params = LaunchConfiguration("extra_params").perform(context)
+    if extra_params:
+        parameters.append(extra_params)
+
+    return [Node(
+        package="cartesian_manager",
+        executable="cartesian_manager_node",
+        name="cartesian_manager",
+        output="screen",
+        parameters=parameters,
+    )]
 
 
 def generate_launch_description():
@@ -35,6 +50,11 @@ def generate_launch_description():
                 "joystick_3d.yaml",
             ]),
             description="Joystick mapper parameter file.",
+        ),
+        DeclareLaunchArgument(
+            "extra_params",
+            default_value="",
+            description="Parameter file layered after explorer_params.yaml for the manager.",
         ),
     ]
 
@@ -96,12 +116,9 @@ def generate_launch_description():
         output="screen",
     )
 
-    manager_node = Node(
-        package="cartesian_manager",
-        executable="cartesian_manager_node",
-        name="cartesian_manager",
-        output="screen",
-        parameters=[controller_config],
+    manager_node = OpaqueFunction(
+        function=launch_manager_node,
+        args=[controller_config],
     )
 
     joy_node = Node(

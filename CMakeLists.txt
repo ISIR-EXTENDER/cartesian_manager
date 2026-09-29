@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(generate_parameter_library REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -51,6 +52,7 @@ target_include_directories(${PROJECT_NAME}_ros PUBLIC
   ${EIGEN3_INCLUDE_DIRS}
 )
 ament_target_dependencies(${PROJECT_NAME}_ros
+  diagnostic_msgs
   Eigen3
   generate_parameter_library
   geometry_msgs
@@ -104,6 +106,7 @@ ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME}_core ${PROJECT_NAME}_ros)
 ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
+  diagnostic_msgs
   Eigen3
   generate_parameter_library
   geometry_msgs

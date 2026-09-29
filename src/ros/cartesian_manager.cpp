@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "diagnostic_msgs/msg/diagnostic_status.hpp"
+#include "diagnostic_msgs/msg/key_value.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
@@ -20,6 +22,7 @@ namespace ros_cartesian_manager
   {
     constexpr const char *kOutputCommandPublisher = "output_command";
     constexpr const char *kJointTargetCommandPublisher = "joint_target_command";
+    constexpr const char *kStatusPublisher = "status";
     constexpr const char *kBehaviourPassthroughMode = "behaviour/passthrough";
     constexpr const char *kJointTargetModePrefix = "behaviour/joint_target/";
     constexpr const char *kPoseTargetModePrefix = "behaviour/pose_target/";
@@ -119,6 +122,81 @@ namespace ros_cartesian_manager
       return msg;
     }
 
+    std::string geometricName(manager_core::Geometrics state)
+    {
+      switch (state)
+      {
+      case manager_core::Geometrics::BOTH:
+        return "geometric/both";
+      case manager_core::Geometrics::JACO:
+        return "geometric/jaco";
+      case manager_core::Geometrics::SNAKE:
+        return "geometric/snake";
+      }
+      return {};
+    }
+
+    std::string behaviourName(manager_core::Behaviours state)
+    {
+      switch (state)
+      {
+      case manager_core::Behaviours::PASSTHROUGH:
+        return "behaviour/passthrough";
+      case manager_core::Behaviours::JOINT_TARGET:
+        return "behaviour/joint_target";
+      case manager_core::Behaviours::POSE_TARGET:
+        return "behaviour/pose_target";
+      }
+      return {};
+    }
+
+    std::string inputSourceName(manager_core::InputSource source)
+    {
+      switch (source)
+      {
+      case manager_core::InputSource::JOYSTICK:
+        return "joystick";
+      case manager_core::InputSource::TABLET:
+        return "tablet";
+      case manager_core::InputSource::VISUAL_SERVOING:
+        return "visual_servoing";
+      }
+      return {};
+    }
+
+    diagnostic_msgs::msg::KeyValue keyValue(const std::string &key, const std::string &value)
+    {
+      diagnostic_msgs::msg::KeyValue key_value;
+      key_value.key = key;
+      key_value.value = value;
+      return key_value;
+    }
+
+    diagnostic_msgs::msg::DiagnosticStatus statusToMsg(
+        const manager_core::Manager &manager, const std::vector<manager_core::InputConfig> &inputs)
+    {
+      const auto input_manager = manager.getInputManager();
+      std::string enabled_inputs;
+      for (const auto &input : inputs)
+      {
+        if (!input_manager.isInputChannelEnabled(input.source))
+          continue;
+
+        if (!enabled_inputs.empty())
+          enabled_inputs += ",";
+        enabled_inputs += inputSourceName(input.source);
+      }
+
+      diagnostic_msgs::msg::DiagnosticStatus msg;
+      msg.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+      msg.name = "cartesian_manager";
+      msg.values = {keyValue("geometric", geometricName(manager.geometricState())),
+                    keyValue("behaviour", behaviourName(manager.behaviourState())),
+                    keyValue("target", manager.activeTargetName()),
+                    keyValue("inputs", enabled_inputs)};
+      return msg;
+    }
+
     std::optional<Eigen::MatrixXd> jacobianFromMsg(const std_msgs::msg::Float64MultiArray &msg,
                                                    const rclcpp::Logger &logger)
     {
@@ -182,6 +260,7 @@ namespace ros_cartesian_manager
   {
     readParameters();
     applyConfig(config_, true);
+    publishStatus();
     timer_ = create_wall_timer(timerPeriod(config_.update_rate_hz), [this]() { updateVelocity(); });
   }
 
@@ -267,6 +346,8 @@ namespace ros_cartesian_manager
                                                                   config_.topics.output_command);
     topic_manager_.addPublisher<sensor_msgs::msg::JointState>(kJointTargetCommandPublisher,
                                                               config_.topics.joint_target_command);
+    topic_manager_.addPublisher<diagnostic_msgs::msg::DiagnosticStatus>(
+        kStatusPublisher, "~/status", rclcpp::QoS(1).reliable().transient_local());
   }
 
   void CartesianManagerROS::setupSubscribers()
@@ -478,6 +559,16 @@ namespace ros_cartesian_manager
     topic_manager_.publish(kJointTargetCommandPublisher, cancel_msg);
   }
 
+  void CartesianManagerROS::publishStatus()
+  {
+    auto status = statusToMsg(manager_, config_.manager.inputs);
+    if (last_status_ && *last_status_ == status)
+      return;
+
+    topic_manager_.publish(kStatusPublisher, status);
+    last_status_ = std::move(status);
+  }
+
   void CartesianManagerROS::updateVelocity()
   {
     refreshParameters();
@@ -488,5 +579,6 @@ namespace ros_cartesian_manager
             .value_or(manager_core::CartesianVelocity{});
     topic_manager_.publish(kOutputCommandPublisher,
                            commandToMsg(command, now, config_.output_frame_id));
+    publishStatus();
   }
 } // namespace ros_cartesian_manager
