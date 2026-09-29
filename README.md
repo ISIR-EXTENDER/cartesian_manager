@@ -389,7 +389,8 @@ for example between trials. Static goals come from `behaviours.shared_control.go
 `/shared_control/goals`. Each message is the whole set, so the publisher decides which goals exist and an
 empty array clears them. A goal within `goal_match_distance` of one in the previous set keeps its confidence,
 so a re-detected tag is not forgotten. In `/shared_control/confidences`, dynamic goals are `goal_<index>` in
-the order of the last array.
+the order of the last array, so an id follows the position in the array, not the goal; static names may not
+use that form or contain a comma. Both state topics publish at 20 Hz while the behaviour is active.
 
 ```bash
 ros2 topic pub --once /shared_control/goals geometry_msgs/msg/PoseArray \

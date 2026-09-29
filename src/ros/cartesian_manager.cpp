@@ -32,6 +32,7 @@ namespace ros_cartesian_manager
     constexpr const char *kSharedControlMode = "behaviour/shared_control";
     constexpr const char *kSharedControlConfidencesPublisher = "shared_control_confidences";
     constexpr const char *kSharedControlSoftGoalPublisher = "shared_control_soft_goal";
+    constexpr double kSharedControlStatePeriodSec = 0.05;
 
     std::chrono::nanoseconds timerPeriod(double update_rate_hz)
     {
@@ -574,7 +575,8 @@ namespace ros_cartesian_manager
     const bool passthrough_request = normalized_mode_request == kBehaviourPassthroughMode;
     const bool pose_target_request = normalized_mode_request.rfind(kPoseTargetModePrefix, 0) == 0;
     const bool shared_control_request =
-        normalized_mode_request.rfind(kSharedControlMode, 0) == 0;
+        normalized_mode_request == kSharedControlMode ||
+        normalized_mode_request == std::string(kSharedControlMode) + "/reset";
 
     if (!manager_.setMode(normalized_mode_request))
     {
@@ -663,7 +665,14 @@ namespace ros_cartesian_manager
   {
     const auto state = manager_.sharedControlState(robot_context_);
     if (!state)
+    {
+      last_shared_control_state_stamp_.reset();
       return;
+    }
+    if (last_shared_control_state_stamp_ &&
+        (stamp - *last_shared_control_state_stamp_).seconds() < kSharedControlStatePeriodSec)
+      return;
+    last_shared_control_state_stamp_ = stamp;
 
     // One dimension whose label lists the goal ids, comma-separated, in data order.
     std_msgs::msg::Float64MultiArray confidences;

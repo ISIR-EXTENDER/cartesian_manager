@@ -65,6 +65,7 @@ namespace ros_cartesian_manager
     manager_core::Manager manager_;
     manager_core::RobotContext robot_context_;
     rclcpp::TimerBase::SharedPtr timer_;
+    std::optional<rclcpp::Time> last_shared_control_state_stamp_;
 
     std::shared_ptr<cartesian_manager::ParamListener> param_listener_;
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_validator_handle_;

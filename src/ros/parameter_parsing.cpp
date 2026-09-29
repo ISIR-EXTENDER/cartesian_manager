@@ -273,6 +273,16 @@ namespace ros_cartesian_manager
         throw std::invalid_argument("behaviours.shared_control.goal_names contains an empty name");
       }
       requireUniqueNames(names, "behaviours.shared_control.goal_names");
+      for (const auto &name : names)
+      {
+        // The ids are published comma-joined, and dynamic goals are named goal_<index>.
+        if (name.find(',') != std::string::npos)
+          throw std::invalid_argument("behaviours.shared_control.goal_names must not contain ','");
+        if (name.rfind("goal_", 0) == 0 && name.size() > 5 &&
+            std::all_of(name.begin() + 5, name.end(), [](unsigned char c) { return std::isdigit(c); }))
+          throw std::invalid_argument("behaviours.shared_control.goal_names must not use goal_<n>, "
+                                      "reserved for dynamic goals");
+      }
       if (names.empty())
         return config;
       if (source.positions.size() != names.size() * 3 ||
