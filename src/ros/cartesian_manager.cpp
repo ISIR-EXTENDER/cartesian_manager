@@ -155,6 +155,8 @@ namespace ros_cartesian_manager
         return "behaviour/joint_target";
       case manager_core::Behaviours::POSE_TARGET:
         return "behaviour/pose_target";
+      case manager_core::Behaviours::INTENT_SCALING:
+        return "behaviour/intent_scaling";
       }
       return {};
     }
