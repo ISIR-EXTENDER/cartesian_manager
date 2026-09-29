@@ -133,6 +133,22 @@ TEST(IntentScaling, FollowsItsTuning)
   EXPECT_DOUBLE_EQ(hold(shaper, push(1.0), 0.8).linear.x(), 1.0);
 }
 
+TEST(IntentScaling, KeepsTheScaleWithinNewBoundsWhenRetuned)
+{
+  IntentScalingConfig config;
+  IntentScaling shaper{config};
+  shaper.update(push(1.0), RobotContext{}, kDt);
+  ASSERT_NEAR(shaper.scale(), 0.4, 1e-2);
+
+  config.min_scale = 0.6;
+  shaper.configure(config);
+  EXPECT_DOUBLE_EQ(shaper.scale(), 0.6);
+  hold(shaper, push(1.0), 3.0);
+  config.gain = 2.0;
+  shaper.configure(config);
+  EXPECT_DOUBLE_EQ(shaper.scale(), 1.0);
+}
+
 class IntentScalingManager : public ::testing::Test
 {
 protected:
@@ -185,12 +201,33 @@ TEST_F(IntentScalingManager, StartsSlowAgainAfterTheInputTimesOut)
   EXPECT_NEAR(drive(1.0, kDt), 0.4, 1e-3);
 }
 
-TEST_F(IntentScalingManager, StartsSlowWhenSelectedAgain)
+TEST_F(IntentScalingManager, KeepsThePushWhenSelectedAgain)
 {
   ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
   drive(1.0, 3.0);
   ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
+  EXPECT_DOUBLE_EQ(drive(1.0, kDt), 1.0);
+}
+
+TEST_F(IntentScalingManager, StartsSlowAfterLeavingAndComingBack)
+{
+  ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
+  drive(1.0, 3.0);
+  ASSERT_TRUE(manager.setMode("behaviour/passthrough"));
+  ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
   EXPECT_NEAR(drive(1.0, kDt), 0.4, 1e-3);
+}
+
+TEST_F(IntentScalingManager, KeepsThePushWhenAnyParameterIsRetuned)
+{
+  ASSERT_TRUE(manager.setMode("behaviour/intent_scaling"));
+  drive(1.0, 3.0);
+  manager_core::ManagerConfig retuned;
+  retuned.rate_limiter.max_linear_acceleration = 0.0;
+  retuned.rate_limiter.max_angular_acceleration = 0.0;
+  retuned.intent_scaling.gain = 2.0;
+  manager.updateTuning(retuned);
+  EXPECT_DOUBLE_EQ(drive(1.0, kDt), 1.0);
 }
 
 TEST_F(IntentScalingManager, ReportsItsScaleOnlyWhileSelected)

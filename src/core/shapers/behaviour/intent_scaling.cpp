@@ -12,12 +12,14 @@ namespace manager_core
   IntentScaling::IntentScaling(const IntentScalingConfig &config)
   {
     configure(config);
+    reset();
   }
 
+  // Retuning keeps a push in flight; the scale only moves back inside the new bounds.
   void IntentScaling::configure(const IntentScalingConfig &config)
   {
     config_ = config;
-    reset();
+    scale_ = std::clamp(scale_, config_.min_scale, 1.0);
   }
 
   CartesianCommand IntentScaling::update(const CartesianCommand &input, const RobotContext &,

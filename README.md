@@ -367,7 +367,9 @@ are also rejected, while valid quaternions are normalized. Named YAML targets an
 `behaviour/intent_scaling` speeds the arm up while the operator keeps pushing the same way. A push starts at
 `min_scale` of the linear command and rises to full scale; releasing the input, or turning back against the push,
 starts slow again. The output stays within unit scale, so `command_max_linear_velocity` in `qontrol_controller`
-remains the top speed. Angular commands are not scaled. `behaviour/passthrough` turns it off.
+remains the top speed. Angular commands are not scaled: under `geometric/jaco` or `geometric/snake` the wrist turn
+follows the unscaled push, because the geometric shaper runs first. `behaviour/passthrough` turns it off;
+asking again while it runs, or retuning any parameter, keeps the push in flight.
 
 ```yaml
     behaviours:

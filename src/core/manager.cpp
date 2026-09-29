@@ -158,6 +158,11 @@ namespace manager_core
         {
           return false;
         }
+        // Asking again for the running behaviour keeps the push window.
+        if (behaviour_state_ == Behaviours::INTENT_SCALING)
+        {
+          return true;
+        }
         if (behaviour_state_ == Behaviours::POSE_TARGET)
         {
           behaviours_.at(Behaviours::POSE_TARGET)->reset();
