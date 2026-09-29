@@ -91,7 +91,8 @@ namespace manager_core
 
     CartesianPose ee_pose = context.ee_pose;
     ee_pose.orientation = normalized(ee_pose.orientation);
-    const Twist si{input.linear * scale.linear, input.angular * scale.angular};
+    const Twist si{input.linear * config_.input_scale * scale.linear,
+                   input.angular * config_.input_scale * scale.angular};
 
     Twist shaped;
     if (input.linear.norm() >= kReleasedNorm)

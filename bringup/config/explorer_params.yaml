@@ -118,7 +118,7 @@ cartesian_manager:
       shared_control:
         goal_names: [""]
         alpha_conf: 1.5
-        theta_l_deg: 30.0
+        theta_l_deg: 15.0
         v_j_max: 0.055
         gamma: 2.0
         r1: 0.04
@@ -126,3 +126,4 @@ cartesian_manager:
         theta1_deg: 15.0
         theta2_deg: 5.0
         goal_match_distance: 0.05
+        input_scale: 1.0

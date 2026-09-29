@@ -252,6 +252,9 @@ namespace ros_cartesian_manager
       config.theta2 = degreesToRadians(source.theta2_deg);
       config.goal_match_distance = source.goal_match_distance;
       requireNonNegative(config.goal_match_distance, "behaviours.shared_control.goal_match_distance");
+      config.input_scale = source.input_scale;
+      requirePositive(config.input_scale, "behaviours.shared_control.input_scale");
+      requireAtMost(config.input_scale, 1.0, "behaviours.shared_control.input_scale");
       requireNonNegative(config.alpha_conf, "behaviours.shared_control.alpha_conf");
       requirePositive(source.theta_l_deg, "behaviours.shared_control.theta_l_deg");
       requireAtMost(source.theta_l_deg, 90.0, "behaviours.shared_control.theta_l_deg");
@@ -401,6 +404,8 @@ namespace ros_cartesian_manager
         params.behaviours.shared_control.theta2_deg = param.as_double();
       else if (name == "behaviours.shared_control.goal_match_distance")
         params.behaviours.shared_control.goal_match_distance = param.as_double();
+      else if (name == "behaviours.shared_control.input_scale")
+        params.behaviours.shared_control.input_scale = param.as_double();
     }
     return params;
   }

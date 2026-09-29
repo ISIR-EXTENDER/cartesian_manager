@@ -21,7 +21,7 @@ namespace manager_core
   struct SharedControlConfig
   {
     double alpha_conf{1.5};              // confidence integration gain [1/s]
-    double theta_l{30.0 * M_PI / 180.0}; // confidence cone half-angle [rad]
+    double theta_l{15.0 * M_PI / 180.0}; // confidence cone half-angle [rad]
     double v_j_max{0.055};               // speed at which confidence integrates at full rate [m/s]
     double gamma{2.0};                   // gain on the goal-aligned component
     double r1{0.04};                     // distance gate radii [m]
@@ -29,6 +29,7 @@ namespace manager_core
     double theta1{15.0 * M_PI / 180.0}; // rotation gate angles [rad]
     double theta2{5.0 * M_PI / 180.0};
     double goal_match_distance{0.05};     // a new goal this close to a previous one keeps its confidence [m]
+    double input_scale{1.0};              // headroom for gamma under the downstream cap; 1/gamma is the FR3 ratio
     std::vector<SharedControlGoal> goals; // static goals in the base frame
   };
 

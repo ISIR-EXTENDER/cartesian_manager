@@ -264,7 +264,7 @@ cartesian_manager:
         description: "Confidence integration gain in 1/s."
       theta_l_deg:
         type: double
-        default_value: 30.0
+        default_value: 15.0
         description: "Half-angle of the cone around a goal direction inside which its confidence rises, in degrees."
       v_j_max:
         type: double
@@ -294,3 +294,7 @@ cartesian_manager:
         type: double
         default_value: 0.05
         description: "A goal within this distance in m of a goal from the previous set keeps its confidence."
+      input_scale:
+        type: double
+        default_value: 1.0
+        description: "Scale on the operator command inside shared control, in (0, 1]. Below 1 leaves headroom for gamma under the downstream max speed; 1/gamma reproduces the FR3 setup."

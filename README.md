@@ -400,14 +400,19 @@ ros2 topic pub --once /shared_control/goals geometry_msgs/msg/PoseArray \
 The law is written in SI units, while the manager speaks in unit scale. `command_scale` must match
 `qontrol_controller`'s `command_max_linear_velocity` and `command_max_angular_velocity`; the manager also
 follows the max-speed topics that change them live. The shaper adds no filter of its own: the rate limiter
-conditions the output, and the confidence integration already smooths the intent estimate. An amplified
-command above unit scale is clipped by the output normalisation, which keeps its direction.
+conditions the output, and the confidence integration already smooths the intent estimate.
+
+`qontrol_controller` caps the speed at `command_max_*`, where the FR3 controller had no constraint, so an
+amplified command above unit scale is clipped by the output normalisation, which keeps its direction. At a full
+push the cap removes the amplification; `input_scale` scales the operator's command inside this behaviour to
+leave headroom, and `1 / gamma` reproduces the FR3 ratio of assisted to unassisted speed. The cap stays the
+authority either way.
 
 ```yaml
     behaviours:
       shared_control:
         alpha_conf: 1.5      # confidence gain, 1/s
-        theta_l_deg: 30.0    # half-angle of the confidence cone
+        theta_l_deg: 15.0    # half-angle of the confidence cone
         v_j_max: 0.055       # speed, in m/s, at which confidences integrate at full rate
         gamma: 2.0           # gain on the goal-aligned component
         r1: 0.04             # assistance ramps between r2 and r1, in m;
@@ -415,6 +420,7 @@ command above unit scale is clipped by the output normalisation, which keeps its
         theta1_deg: 15.0     # rotation assistance ramps between theta2 and theta1
         theta2_deg: 5.0
         goal_match_distance: 0.05  # m
+        input_scale: 1.0     # < 1 leaves headroom for gamma under the downstream cap
 ```
 
 All tuning values and `command_scale` can be changed at runtime with `ros2 param set`.

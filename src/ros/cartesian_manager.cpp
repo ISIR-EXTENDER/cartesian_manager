@@ -64,7 +64,8 @@ namespace ros_cartesian_manager
     {
       return a.alpha_conf == b.alpha_conf && a.theta_l == b.theta_l && a.v_j_max == b.v_j_max &&
              a.gamma == b.gamma && a.r1 == b.r1 && a.r2 == b.r2 && a.theta1 == b.theta1 &&
-             a.theta2 == b.theta2 && a.goal_match_distance == b.goal_match_distance;
+             a.theta2 == b.theta2 && a.goal_match_distance == b.goal_match_distance &&
+             a.input_scale == b.input_scale;
     }
 
     bool tuningConfigsEqual(const manager_core::ManagerConfig &lhs,

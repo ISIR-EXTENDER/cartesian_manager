@@ -332,3 +332,17 @@ TEST(SharedControlManager, UsesTheSnakeAngularCommandAsTheTranslationBaseline)
   const auto near = push(robotAt(target - Eigen::Vector3d(0.01, 0.0, 0.0)), 1.0);
   EXPECT_TRUE(near.angular.isApprox(Eigen::Vector3d(0.0, 1.0, 0.0), 1e-9));
 }
+
+TEST(SharedControl, InputScaleLeavesHeadroomForTheAmplification)
+{
+  SharedControlConfig config;
+  config.input_scale = 0.5;
+  SharedControl shaper{config};
+  shaper.setGoals({goal("ahead", kStart + Eigen::Vector3d(0.3, 0.0, 0.0))});
+  hold(shaper, twist({1.0, 0.0, 0.0}), robotAt(kStart), 2.0);
+  ASSERT_DOUBLE_EQ(confidenceOf(shaper, "ahead"), 1.0);
+
+  // Far from the goal a full push doubles from half scale to full; across the goal it stays at half.
+  EXPECT_NEAR(shaper.update(twist({1.0, 0.0, 0.0}), robotAt(kStart), kDt).linear.x(), 1.0, 1e-9);
+  EXPECT_NEAR(shaper.update(twist({0.0, 1.0, 0.0}), robotAt(kStart), kDt).linear.y(), 0.5, 1e-9);
+}
