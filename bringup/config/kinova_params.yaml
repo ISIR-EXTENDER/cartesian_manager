@@ -32,9 +32,9 @@ qontrol_explorer:
     robot_command: position
 
     # Velocity parameters
-    command_max_linear_velocity: 0.2
+    command_max_linear_velocity: 0.1
     topic_max_linear_velocity: /explorer_user_interfaces/rqt_armcontrol/max_linear_speed
-    command_max_angular_velocity: 0.4                                                         # command_max_angular_velocity = command_max_linear_velocity / characteristic_lenght    with characteristic_lenght (of the robot) = 0.5
+    command_max_angular_velocity: 0.2                                                         # command_max_angular_velocity = command_max_linear_velocity / characteristic_lenght    with characteristic_lenght (of the robot) = 0.5
     topic_max_angular_velocity: /explorer_user_interfaces/rqt_armcontrol/max_angular_speed
     input_topic_name: /cartesian_command
     regularisation_weight: 1e-4
