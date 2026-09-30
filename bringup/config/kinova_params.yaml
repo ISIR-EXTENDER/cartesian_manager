@@ -32,9 +32,9 @@ qontrol_explorer:
     robot_command: position
 
     # Velocity parameters
-    command_max_linear_velocity: 0.05
+    command_max_linear_velocity: 0.1
     topic_max_linear_velocity: /explorer_user_interfaces/rqt_armcontrol/max_linear_speed
-    command_max_angular_velocity: 0.4
+    command_max_angular_velocity: 0.2                                                         # command_max_angular_velocity = command_max_linear_velocity / characteristic_lenght    with characteristic_lenght (of the robot) = 0.5
     topic_max_angular_velocity: /explorer_user_interfaces/rqt_armcontrol/max_angular_speed
     input_topic_name: /cartesian_command
     regularisation_weight: 1e-4
@@ -74,9 +74,9 @@ cartesian_manager:
       hybrid_frame: hybrid_frame
 
     topics:
-      joystick_command: /joystick_cartesian_command
-      tablet_command: /tablet_cartesian_command
-      visual_servoing_command: /visual_servoing_cartesian_command
+      joystick_command: /physical_joystick_cartesian_command
+      tablet_command: /joystick_cartesian_command
+      visual_servoing_command: /visual_servoing/velocity_command
       mode_request: /mode_request
       pose_target: /pose_target
       ee_pose: /ee_pose
@@ -90,6 +90,7 @@ cartesian_manager:
       sources:
         - joystick
         - tablet
+        - visual_servoing
       joystick:
         timeout_sec: 0.2
         enabled: true
