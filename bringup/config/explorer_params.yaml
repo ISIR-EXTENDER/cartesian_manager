@@ -52,8 +52,8 @@ cartesian_manager:
       hybrid_frame: hybrid_frame
 
     topics:
-      joystick_command: /joystick_cartesian_command
-      tablet_command: /tablet_cartesian_command
+      joystick_command: /physical_joystick_cartesian_command
+      tablet_command: /joystick_cartesian_command
       visual_servoing_command: /visual_servoing_cartesian_command
       mode_request: /mode_request
       pose_target: /pose_target
