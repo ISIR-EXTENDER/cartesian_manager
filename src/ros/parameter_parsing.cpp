@@ -323,6 +323,7 @@ namespace ros_cartesian_manager
     config.topics.joint_states = params.topics.joint_states;
     config.topics.joint_target_command = params.topics.joint_target_command;
     config.topics.output_command = params.topics.output_command;
+    config.topics.qontrol_controller_commands = params.topics.qontrol_controller_commands;
 
     requireNonEmpty(config.topics.mode_request, "topics.mode_request");
     requireNonEmpty(config.topics.pose_target, "topics.pose_target");

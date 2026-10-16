@@ -377,6 +377,10 @@ namespace ros_cartesian_manager
         std::bind(&CartesianManagerROS::jointStatesSubscriberCallback, this,
                   std::placeholders::_1));
 
+    topic_manager_.addSubscriber<std_msgs::msg::Float64MultiArray>(
+        "qontrol_controller_commands", config_.topics.qontrol_controller_commands,
+        std::bind(&CartesianManagerROS::qontrolSubscriberCallback, this, std::placeholders::_1));
+
     for (const auto &input : config_.manager.inputs)
     {
       switch (input.source)
@@ -508,13 +512,25 @@ namespace ros_cartesian_manager
 
     if (joint_target_request)
     {
-      publishJointTargetCommand(manager_.activeJointTargetCommand());
+      std::string joint_target_name = normalized_mode_request.substr(strlen(kJointTargetModePrefix)); // extrait home ou wrist_return du msg normalise 
+      manager_.updateJointTargetName(joint_target_name);
+      publishJointTargetCommand(manager_.activeJointTargetCommand(desired_joint_position_)); // ADDED robot_context as an argument
+      //publishJointTargetCommand(manager_.activeJointTargetCommand());
       manager_.setMode(kBehaviourPassthroughMode);
       return;
     }
 
     if (passthrough_request || pose_target_request)
       publishJointTargetCommand(std::nullopt);
+  }
+
+  void CartesianManagerROS::qontrolSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg)
+  {
+    desired_joint_position_.resize(msg.data.size());
+    for (int i = 0; i < msg.data.size(); i++){
+      desired_joint_position_[i] = msg.data[i];
+
+    }
   }
 
   void CartesianManagerROS::poseTargetCallback(const geometry_msgs::msg::PoseStamped &pose_target)

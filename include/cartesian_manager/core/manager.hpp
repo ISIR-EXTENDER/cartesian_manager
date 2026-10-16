@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 #include "cartesian_manager/core/input_manager.hpp"
 
@@ -37,6 +38,7 @@ namespace manager_core
     void addInputChannel(InputSource source, double timeout_sec, bool enabled = true);
     void configureInputChannels(const std::vector<InputConfig> &channels);
     void clearInputChannels();
+    void updateJointTargetName(std::string& joint_target_name);
 
     void enableInput(InputSource source);
     void disableInput(InputSource source);
@@ -46,7 +48,8 @@ namespace manager_core
 
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
-    std::optional<JointTargetCommand> activeJointTargetCommand() const;
+    // std::optional<JointTargetCommand> activeJointTargetCommand(const RobotContext &context) const;
+    std::optional<JointTargetCommand> activeJointTargetCommand(const Eigen::VectorXd& desired_joint_target) const;
 
     Geometrics geometricState() const;
     Behaviours behaviourState() const;
@@ -77,6 +80,6 @@ namespace manager_core
 
     std::unordered_map<Geometrics, std::unique_ptr<Shaper>> geometric_shapers_;
     std::unordered_map<Behaviours, std::unique_ptr<Shaper>> behaviours_;
-    std::string joint_target_name_{"home"};
+    std::string joint_target_name_;
   };
 } // namespace manager_core

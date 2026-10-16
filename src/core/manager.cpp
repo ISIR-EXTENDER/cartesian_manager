@@ -74,6 +74,11 @@ namespace manager_core
     input_manager_.clearInputChannels();
   }
 
+  void Manager::updateJointTargetName(std::string& joint_target_name) 
+  {
+    joint_target_name_ = joint_target_name;
+  }
+
   void Manager::enableInput(InputSource source)
   {
     input_manager_.enableInputChannel(source);
@@ -211,7 +216,7 @@ namespace manager_core
     return true;
   }
 
-  std::optional<JointTargetCommand> Manager::activeJointTargetCommand() const
+  std::optional<JointTargetCommand> Manager::activeJointTargetCommand(const Eigen::VectorXd& desired_joint_target) const
   {
     if (behaviour_state_ != Behaviours::JOINT_TARGET)
       return std::nullopt;
@@ -223,7 +228,40 @@ namespace manager_core
     JointTargetCommand command;
     command.name = target->name;
     command.joint_names = joint_target_config_.joint_names;
-    command.positions = target->positions;
+    if(command.name == "wrist_return") {    // position : wrist_return
+        command.positions = target->positions;
+      for( int i=0 ; i<command.joint_names.size() ; i++ ) {
+        command.positions[i] = desired_joint_target[i];
+      }
+      // return wrist if possible
+      if ( desired_joint_target[3] < -(M_PI/2) ) {
+        if ( desired_joint_target[5] < -(M_PI/2) ) {
+          command.positions[3] += M_PI;
+          command.positions[5] += M_PI;
+          command.positions[4] *= -1.0;
+        }
+        if ( desired_joint_target[5] > (M_PI/2) ) {
+          command.positions[3] += M_PI;
+          command.positions[5] -= M_PI;
+          command.positions[4] *= -1.0;
+        }
+      }
+      if ( desired_joint_target[3] > (M_PI/2) ) {
+        if ( desired_joint_target[5] < -(M_PI/2) ) {
+          command.positions[3] -= M_PI;
+          command.positions[5] += M_PI;
+          command.positions[4] *= -1.0;
+        }
+        if ( desired_joint_target[5] > (M_PI/2) ) {
+          command.positions[3] -= M_PI;
+          command.positions[5] -= M_PI;
+          command.positions[4] *= -1.0;
+        }
+      }
+    }
+    else {
+      command.positions = target->positions;      // position : HOME 
+    }
     return command;
   }
 
@@ -328,13 +366,16 @@ namespace manager_core
 
       // Normalize the linear and angular components of the command
       const double lin_norm = command->linear.norm();
-      if (lin_norm > 1.0)
+      if (lin_norm > 1.0) {
         command->linear /= lin_norm;
+        command->angular /= lin_norm;
+      }
 
       const double ang_norm = command->angular.norm();
-      if (ang_norm > 1.0)
+      if (ang_norm > 1.0) {
+        command->linear /= ang_norm;
         command->angular /= ang_norm;
-
+      }
       rate_limiter_.update(*command, dt_sec);
     }
     else

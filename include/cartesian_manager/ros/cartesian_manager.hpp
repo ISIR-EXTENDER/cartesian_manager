@@ -41,6 +41,7 @@ namespace ros_cartesian_manager
     void joystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void tabletSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void visualServoingSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
+    void qontrolSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg);
 
   private:
     void setupSubscribers();
@@ -65,5 +66,6 @@ namespace ros_cartesian_manager
     cartesian_manager::Params params_;
     ManagerConfig config_;
     std::optional<diagnostic_msgs::msg::DiagnosticStatus> last_status_;
+    Eigen::VectorXd desired_joint_position_;
   };
 } // namespace ros_cartesian_manager

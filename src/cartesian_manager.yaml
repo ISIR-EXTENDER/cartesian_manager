@@ -88,6 +88,11 @@ cartesian_manager:
       default_value: "/cartesian_command"
       read_only: true
       description: "Topic used by the command manager output publisher."
+    qontrol_controller_commands:
+      type: string
+      default_value: "/qontrol_controller/commands"
+      read_only: true
+      description: "Topic carrying desired joint pose sent from QP"
 
   inputs:
     sources:
