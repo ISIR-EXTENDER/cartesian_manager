@@ -27,18 +27,18 @@ qontrol_explorer:
       - effort
     robot_command: position
 
-    command_max_linear_velocity: 0.1
+    command_max_linear_velocity: 0.4
     topic_max_linear_velocity: /explorer_user_interfaces/rqt_armcontrol/max_linear_speed
-    command_max_angular_velocity: 0.2
+    command_max_angular_velocity: 0.6
     topic_max_angular_velocity: /explorer_user_interfaces/rqt_armcontrol/max_angular_speed
     input_topic_name: /cartesian_command
     regularisation_weight: 1e-4
     topic_control_frame: /explorer_user_interfaces/rqt_armcontrol/control_frame_selection
     joint_target_topic_name: /joint_target_command
-    joint_target_gain: 1.0
-    joint_target_max_velocity: 0.2
-    joint_target_tolerance: 0.05
-    joint_target_task_weight: 1.0
+    joint_target_gain: 5.0
+    joint_target_max_velocity: 1.3
+    joint_target_tolerance: 0.0001
+    joint_target_task_weight: 100000.0
 
 cartesian_manager:
   ros__parameters:
@@ -63,6 +63,7 @@ cartesian_manager:
       joint_states: /joint_states
       joint_target_command: /joint_target_command
       output_command: /cartesian_command
+      qontrol_controller_commands: /qontrol_controller/commands
 
     inputs:
       sources:
@@ -83,17 +84,18 @@ cartesian_manager:
         min_radius: 0.05
         max_angular_velocity: 0.4
       snake:
-        gain: 3.0
+        gain: 4.0
 
     rate_limiter:
-      max_linear_acceleration: 2.0
-      max_angular_acceleration: 1.0
+      max_linear_acceleration: 4.0
+      max_angular_acceleration: 4.0
 
     behaviours:
       joint_targets:
         joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
-        target_names: [home]
-        positions: [2.5, 0.3, -2.4, 2.97, 1.2, -0.5]
+        target_names: [home, wrist_return]
+        positions: [0.0, -0.3, 2.1, 0.0, 0.9, 0.0, 
+                    0.0, -0.3, 2.1, 0.0, 0.9, 0.0]
       pose_targets:
         target_names: [ready]
         frame_ids: [base_link]
