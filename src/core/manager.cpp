@@ -329,11 +329,17 @@ namespace manager_core
       // Normalize the linear and angular components of the command
       const double lin_norm = command->linear.norm();
       if (lin_norm > 1.0)
+      {
         command->linear /= lin_norm;
+        command->angular /= lin_norm;
+      }
 
       const double ang_norm = command->angular.norm();
       if (ang_norm > 1.0)
+      {
+        command->linear /= ang_norm;
         command->angular /= ang_norm;
+      }
 
       rate_limiter_.update(*command, dt_sec);
     }
