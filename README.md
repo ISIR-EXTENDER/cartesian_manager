@@ -138,12 +138,12 @@ Explorer:
 
 ```bash
 source install/setup.bash
-ros2 launch cartesian_manager explorer.launch.py use_simulation:=true
+ros2 launch cartesian_manager explorer.launch.py simulation:=true
 ```
 
 ```bash
 source install/setup.bash
-ros2 launch cartesian_manager explorer.launch.py use_simulation:=false
+ros2 launch cartesian_manager explorer.launch.py simulation:=false
 ```
 
 Kinova:
@@ -163,13 +163,13 @@ ros2 launch cartesian_manager explorer.launch.py
 Simulation:
 
 ```bash
-ros2 launch cartesian_manager explorer.launch.py use_simulation:=true
+ros2 launch cartesian_manager explorer.launch.py simulation:=true
 ```
 
 Hardware:
 
 ```bash
-ros2 launch cartesian_manager explorer.launch.py use_simulation:=false
+ros2 launch cartesian_manager explorer.launch.py simulation:=false
 ```
 
 The launch file starts:
@@ -182,6 +182,13 @@ The launch file starts:
 - `joystick_mapper`.
 
 Pass `extra_params:=<file>` to load a parameter file after the robot's params file, for example to add `visual_servoing` to `inputs.sources` without editing the example config. Both launch files accept it.
+
+For Explorer, `bringup/config/explorer_params.yaml` is shared by `cartesian_manager`,
+`explorer_custom_controller`, and `qontrol_explorer`. Pass
+`custom_controller_config_file:=<file>` to use another shared parameter file. The launch
+file still sets the custom controller's `simulation` and `debug` parameters from its launch
+arguments without rewriting the YAML, and activates the two chained controllers with one
+spawner as a group.
 
 The launch/config files are installed from:
 
