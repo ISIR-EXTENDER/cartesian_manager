@@ -20,7 +20,7 @@ namespace ros_cartesian_manager
 {
   namespace
   {
-    constexpr const char *kOutputCommandPublisher = "output_command";
+    constexpr const char *kOutputCommandPublisher = "output_command"; // correspond au param du YAML
     constexpr const char *kJointTargetCommandPublisher =
         "joint_target_command"; // a rename en velocity
     constexpr const char *kStatusPublisher = "status";
