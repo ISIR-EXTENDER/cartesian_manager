@@ -48,8 +48,10 @@ namespace manager_core
 
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
+    bool setJointTarget(const std::string &target_name, std::string *error = nullptr);
     // std::optional<JointTargetCommand> activeJointTargetCommand(const RobotContext &context) const;
-    std::optional<JointTargetCommand> activeJointTargetCommand(const Eigen::VectorXd& desired_joint_target) const;
+    std::optional<JointVelocityCommand> activeJointTargetCommand(const RobotContext &robot_context) const;
+    
 
     Geometrics geometricState() const;
     Behaviours behaviourState() const;

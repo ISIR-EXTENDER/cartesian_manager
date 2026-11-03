@@ -56,7 +56,7 @@ namespace ros_cartesian_manager
 
     rcl_interfaces::msg::SetParametersResult validateParameterUpdate(
         const std::vector<rclcpp::Parameter> &parameters) const;
-    void publishJointTargetCommand(const std::optional<manager_core::JointTargetCommand> &command);
+    void publishJointVelocityCommand(const std::optional<manager_core::JointVelocityCommand> &command);
     void publishStatus();
 
     TopicManager topic_manager_;

@@ -21,7 +21,8 @@ namespace ros_cartesian_manager
   namespace
   {
     constexpr const char *kOutputCommandPublisher = "output_command";
-    constexpr const char *kJointTargetCommandPublisher = "joint_target_command";
+    constexpr const char *kJointTargetCommandPublisher =
+        "joint_target_command"; // a rename en velocity
     constexpr const char *kStatusPublisher = "status";
     constexpr const char *kBehaviourPassthroughMode = "behaviour/passthrough";
     constexpr const char *kJointTargetModePrefix = "behaviour/joint_target/";
@@ -112,13 +113,15 @@ namespace ros_cartesian_manager
       return msg;
     }
 
-    sensor_msgs::msg::JointState jointTargetToMsg(const manager_core::JointTargetCommand &command,
-                                                  const rclcpp::Time &stamp)
+    sensor_msgs::msg::JointState jointVelocityTargetToMsg(
+        const manager_core::JointVelocityCommand &command, const rclcpp::Time &stamp)
     {
       sensor_msgs::msg::JointState msg;
       msg.header.stamp = stamp;
       msg.name = command.joint_names;
-      msg.position = command.positions;
+      std::vector<double> velocity(command.joint_speed.data(),
+                                   command.joint_speed.data() + command.joint_speed.size());
+      msg.velocity = velocity;
       return msg;
     }
 
@@ -594,24 +597,30 @@ namespace ros_cartesian_manager
 
     if (joint_target_request)
     {
-      std::string joint_target_name = normalized_mode_request.substr(strlen(kJointTargetModePrefix)); // extrait home ou wrist_return du msg normalise 
-      manager_.updateJointTargetName(joint_target_name);
-      publishJointTargetCommand(manager_.activeJointTargetCommand(desired_joint_position_)); // ADDED robot_context as an argument
-      //publishJointTargetCommand(manager_.activeJointTargetCommand());
+
+      // Lire le nom de la target et la mettre en activeTraget
+      std::string joint_target_name = normalized_mode_request.substr(
+          strlen(kJointTargetModePrefix)); // extrait home ou wrist_return du msg normalise
+
+      manager_.setJointTarget(joint_target_name); // remplacer par une focntion de la classe
+      std::optional<manager_core::JointVelocityCommand> command = manager_.activeJointTargetCommand(robot_context_);
+
+      publishJointVelocityCommand(command); // ADDED robot_context as an argument
+      // publishJointTargetCommand(manager_.activeJointTargetCommand());
       manager_.setMode(kBehaviourPassthroughMode);
       return;
     }
 
     if (passthrough_request || pose_target_request)
-      publishJointTargetCommand(std::nullopt);
+      publishJointVelocityCommand(std::nullopt);
   }
 
   void CartesianManagerROS::qontrolSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg)
   {
     desired_joint_position_.resize(msg.data.size());
-    for (int i = 0; i < msg.data.size(); i++){
+    for (int i = 0; i < msg.data.size(); i++)
+    {
       desired_joint_position_[i] = msg.data[i];
-
     }
   }
 
@@ -640,15 +649,16 @@ namespace ros_cartesian_manager
       return;
     }
 
-    publishJointTargetCommand(std::nullopt);
+    publishJointVelocityCommand(std::nullopt);
   }
 
-  void CartesianManagerROS::publishJointTargetCommand(
-      const std::optional<manager_core::JointTargetCommand> &command)
+  void CartesianManagerROS::publishJointVelocityCommand(
+      const std::optional<manager_core::JointVelocityCommand> &command)
   {
     if (command)
     {
-      topic_manager_.publish(kJointTargetCommandPublisher, jointTargetToMsg(*command, now()));
+      topic_manager_.publish(kJointTargetCommandPublisher,
+                             jointVelocityTargetToMsg(*command, now()));
       return;
     }
 
