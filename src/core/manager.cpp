@@ -38,11 +38,16 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
     registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
+    registerBehaviour(Behaviours::JOINT_TARGET,
+                      std::make_unique<JointTarget>(config.joint_targets));
+
+    const auto joint_target = behaviours_.find(Behaviours::JOINT_TARGET);
+    joint_target_ = static_cast<JointTarget &>(*joint_target->second);
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
       behaviour_state_ = Behaviours::PASSTHROUGH;
 
-    if (behaviour_state_ == Behaviours::JOINT_TARGET && !jointTargetByName(joint_target_name_))
+    if (behaviour_state_ == Behaviours::JOINT_TARGET)
       behaviour_state_ = Behaviours::PASSTHROUGH;
 
     rate_limiter_.setConfig(config.rate_limiter);
@@ -72,11 +77,6 @@ namespace manager_core
   void Manager::clearInputChannels()
   {
     input_manager_.clearInputChannels();
-  }
-
-  void Manager::updateJointTargetName(std::string& joint_target_name) 
-  {
-    joint_target_name_ = joint_target_name;
   }
 
   void Manager::enableInput(InputSource source)
@@ -179,12 +179,11 @@ namespace manager_core
           return false;
         }
 
-        if (!jointTargetByName(parts[2]))
+        if (!jointTargetByName(parts[2])) // TODO changer
         {
           return false;
         }
 
-        joint_target_name_ = parts[2];
         behaviour_state_ = Behaviours::JOINT_TARGET;
         return true;
       }
@@ -216,53 +215,82 @@ namespace manager_core
     return true;
   }
 
-  std::optional<JointTargetCommand> Manager::activeJointTargetCommand(const Eigen::VectorXd& desired_joint_target) const
+  bool Manager::setJointTarget(const std::string &target_name, std::string *error)
+  {
+
+    if (!joint_target_.setActiveTarget(target_name)) // essaye de setActiveTarget
+      return false;
+
+    behaviour_state_ = Behaviours::JOINT_TARGET;
+    rate_limiter_.reset();
+    return true;
+  }
+
+  std::optional<JointVelocityCommand> Manager::activeJointTargetCommand(
+      const RobotContext &robot_context) const
   {
     if (behaviour_state_ != Behaviours::JOINT_TARGET)
       return std::nullopt;
 
-    const auto target = jointTargetByName(joint_target_name_);
-    if (!target)
+    JointVelocityCommand command = joint_target_.getJointVelocityCommand(robot_context);
+    return command;
+
+    /*
+    JointTargetCommand active_joint_target = *joint_target.activeTarget();
+
+    if (!active_joint_target)
       return std::nullopt;
 
-    JointTargetCommand command;
-    command.name = target->name;
-    command.joint_names = joint_target_config_.joint_names;
-    if(command.name == "wrist_return") {    // position : wrist_return
-        command.positions = target->positions;
-      for( int i=0 ; i<command.joint_names.size() ; i++ ) {
-        command.positions[i] = desired_joint_target[i];
-      }
-      // return wrist if possible
-      if ( desired_joint_target[3] < -(M_PI/2) ) {
-        if ( desired_joint_target[5] < -(M_PI/2) ) {
-          command.positions[3] += M_PI;
-          command.positions[5] += M_PI;
-          command.positions[4] *= -1.0;
+
+        JointTargetCommand command;
+        command.name = target->name;
+        std::cout << "NOM :" << command.name << std::endl;
+        command.joint_names = joint_target_config_.joint_names;
+        if (command.name == "wrist_return")
+        { // position : wrist_return
+          command.positions = target->positions;
+          for (int i = 0; i < command.joint_names.size(); i++)
+          {
+            command.positions[i] = desired_joint_target[i];
+          }
+          // return wrist if possible wrist_return
+          if (desired_joint_target[3] < -(M_PI / 2))
+          {
+            if (desired_joint_target[5] < -(M_PI / 2))
+            {
+              command.positions[3] += M_PI;
+              command.positions[5] += M_PI;
+              command.positions[4] *= -1.0;
+            }
+            if (desired_joint_target[5] > (M_PI / 2))
+            {
+              command.positions[3] += M_PI;
+              command.positions[5] -= M_PI;
+              command.positions[4] *= -1.0;
+            }
+          }
+          if (desired_joint_target[3] > (M_PI / 2))
+          {
+            if (desired_joint_target[5] < -(M_PI / 2))
+            {
+              command.positions[3] -= M_PI;
+              command.positions[5] += M_PI;
+              command.positions[4] *= -1.0;
+            }
+            if (desired_joint_target[5] > (M_PI / 2))
+            {
+              command.positions[3] -= M_PI;
+              command.positions[5] -= M_PI;
+              command.positions[4] *= -1.0;
+            }
+          }
         }
-        if ( desired_joint_target[5] > (M_PI/2) ) {
-          command.positions[3] += M_PI;
-          command.positions[5] -= M_PI;
-          command.positions[4] *= -1.0;
+        else
+        {
+          command.positions = target->positions; // position : HOME
         }
-      }
-      if ( desired_joint_target[3] > (M_PI/2) ) {
-        if ( desired_joint_target[5] < -(M_PI/2) ) {
-          command.positions[3] -= M_PI;
-          command.positions[5] += M_PI;
-          command.positions[4] *= -1.0;
-        }
-        if ( desired_joint_target[5] > (M_PI/2) ) {
-          command.positions[3] -= M_PI;
-          command.positions[5] -= M_PI;
-          command.positions[4] *= -1.0;
-        }
-      }
-    }
-    else {
-      command.positions = target->positions;      // position : HOME 
-    }
-    return command;
+        return command;
+    */
   }
 
   Geometrics Manager::geometricState() const
@@ -278,7 +306,7 @@ namespace manager_core
   std::string Manager::activeTargetName() const
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
-      return joint_target_name_;
+      return joint_target_.activeTargetName();
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
       return static_cast<const PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
@@ -323,9 +351,9 @@ namespace manager_core
     behaviours_[state] = std::move(shaper);
   }
 
-  const JointTarget *Manager::jointTargetByName(const std::string &target_name) const
+  const JointTargetCommand *Manager::jointTargetByName(const std::string &target_name) const
   {
-    for (const auto &target : joint_target_config_.targets)
+    for (const auto &target : joint_target_config_.positions)
       if (target.name == target_name)
         return &target;
 
@@ -366,13 +394,15 @@ namespace manager_core
 
       // Normalize the linear and angular components of the command
       const double lin_norm = command->linear.norm();
-      if (lin_norm > 1.0) {
+      if (lin_norm > 1.0)
+      {
         command->linear /= lin_norm;
         command->angular /= lin_norm;
       }
 
       const double ang_norm = command->angular.norm();
-      if (ang_norm > 1.0) {
+      if (ang_norm > 1.0)
+      {
         command->linear /= ang_norm;
         command->angular /= ang_norm;
       }

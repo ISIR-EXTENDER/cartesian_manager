@@ -394,7 +394,8 @@ namespace ros_cartesian_manager
       case manager_core::InputSource::JOYSTICK:
         topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
             "joystick_command", config_.topics.joystick_command,
-            std::bind(&CartesianManagerROS::joystickSubscriberCallback, this, std::placeholders::_1));
+            std::bind(&CartesianManagerROS::joystickSubscriberCallback, this,
+                      std::placeholders::_1));
         break;
       case manager_core::InputSource::HAND_JOYSTICK:
         topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
@@ -628,9 +629,9 @@ namespace ros_cartesian_manager
     target.frame_id = pose_target.header.frame_id;
     target.position = Eigen::Vector3d(pose_target.pose.position.x, pose_target.pose.position.y,
                                       pose_target.pose.position.z);
-    target.orientation = Eigen::Quaterniond(
-        pose_target.pose.orientation.w, pose_target.pose.orientation.x,
-        pose_target.pose.orientation.y, pose_target.pose.orientation.z);
+    target.orientation =
+        Eigen::Quaterniond(pose_target.pose.orientation.w, pose_target.pose.orientation.x,
+                           pose_target.pose.orientation.y, pose_target.pose.orientation.z);
 
     std::string error;
     if (!manager_.setPoseTarget(target, &error))

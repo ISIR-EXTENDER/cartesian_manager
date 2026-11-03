@@ -153,11 +153,11 @@ namespace ros_cartesian_manager
       throw std::invalid_argument("inputs.sources contains an unknown source enum value");
     }
 
-    std::vector<manager_core::JointTarget> makeJointTargets(
+    std::vector<manager_core::JointTargetCommand> makeJointTargets(
         const std::vector<std::string> &target_names, const std::vector<double> &positions,
         std::size_t joint_count)
     {
-      std::vector<manager_core::JointTarget> targets;
+      std::vector<manager_core::JointTargetCommand> targets;
       if (joint_count == 0 || target_names.empty())
         return targets;
 
@@ -181,7 +181,7 @@ namespace ros_cartesian_manager
               "behaviours.joint_targets.positions contains a non-finite value");
         }
 
-        manager_core::JointTarget target;
+        manager_core::JointTargetCommand target;
         target.name = target_names[target_index];
         target.positions.assign(first, last);
         targets.push_back(std::move(target));
@@ -257,19 +257,19 @@ namespace ros_cartesian_manager
       return config;
     }
 
-    manager_core::JointTargetBehaviourConfig makeJointTargetConfig(
+    manager_core::JointTargetConfig makeJointTargetConfig(
         const cartesian_manager::Params &params)
     {
       const auto &joint_target_params = params.behaviours.joint_targets;
 
-      manager_core::JointTargetBehaviourConfig config;
+      manager_core::JointTargetConfig config;
       config.joint_names = normalizedNonEmptyNames(joint_target_params.joint_names);
       requireUniqueNames(config.joint_names, "behaviours.joint_targets.joint_names");
 
       auto target_names = normalizedNonEmptyNames(joint_target_params.target_names);
       requireUniqueNames(target_names, "behaviours.joint_targets.target_names");
 
-      config.targets =
+      config.positions =
           makeJointTargets(target_names, joint_target_params.positions, config.joint_names.size());
       return config;
     }

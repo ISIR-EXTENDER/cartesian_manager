@@ -24,7 +24,7 @@ namespace manager_core
     JacoShaperConfig jaco;
     SnakeShaperConfig snake;
     FramesConfig frames;
-    JointTargetBehaviourConfig joint_targets;
+    JointTargetConfig joint_targets;
     PoseTargetConfig pose_targets;
     RateLimiterConfig rate_limiter;
     std::vector<InputConfig> inputs;
@@ -69,17 +69,17 @@ namespace manager_core
 
     void registerGeometricShaper(Geometrics state, std::unique_ptr<Shaper> shaper);
     void registerBehaviour(Behaviours state, std::unique_ptr<Shaper> shaper);
-    const JointTarget *jointTargetByName(const std::string &target_name) const;
+    const JointTargetCommand *jointTargetByName(const std::string &target_name) const;
 
     Geometrics geometric_state_{Geometrics::BOTH};
     Behaviours behaviour_state_{Behaviours::PASSTHROUGH};
-    JointTargetBehaviourConfig joint_target_config_;
+    JointTargetConfig joint_target_config_;
+    JointTarget joint_target_;
     RateLimiter rate_limiter_;
 
     InputManager input_manager_;
 
     std::unordered_map<Geometrics, std::unique_ptr<Shaper>> geometric_shapers_;
     std::unordered_map<Behaviours, std::unique_ptr<Shaper>> behaviours_;
-    std::string joint_target_name_;
   };
 } // namespace manager_core
