@@ -42,25 +42,25 @@ namespace manager_core
     explicit JointTarget(const JointTargetConfig &config);
 
     void reset() override;
-    CartesianCommand update(const CartesianCommand &input, const RobotContext &context,
-                            double dt_sec) override;
-    
-    std::string name() const override;
     void configure(const JointTargetConfig &config);
+    void addJointTarget(const std::string &name, const Eigen::VectorXd &joints);
+
+    std::string name() const override;
+    std::string activeTargetName() const;
     std::optional<std::string> validate(const RobotContext &context) const override;
+
     bool start(const std::string &target_name, const RobotContext &context,
                std::string *error = nullptr) override;
     bool start(const Eigen::VectorXd &target, std::string *error = nullptr);
-
     bool isComplete(const RobotContext &context) const override;
-    
     bool hasTarget(const std::string &name) const;
     bool isActive() const;
-    std::string activeTargetName() const;
-    void addJointTarget(const std::string &name, const Eigen::VectorXd &joints);
-    JointVelocityCommand getJointVelocityCommand(const RobotContext &context) const;
-    const JointTargetCommand *activeTarget() const; 
     bool setActiveTarget(const std::string &name);
+
+    CartesianCommand update(const CartesianCommand &input, const RobotContext &context,
+                            double dt_sec) override;
+    const JointTargetCommand *activeTarget() const;
+    JointVelocityCommand getJointVelocityCommand(const RobotContext &context) const;
 
   private:
     std::unordered_map<std::string, JointTargetCommand> joint_targets_;

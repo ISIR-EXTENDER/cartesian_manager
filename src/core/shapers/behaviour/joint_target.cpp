@@ -12,10 +12,13 @@ namespace manager_core
     configure(config);
   }
 
-  // JointTarget::JointTarget(const JointVelocityCommand &velocity_command)
-  // {
-  //     velocity_command_ = velocity_command;
-  // }
+  void JointTarget::reset()
+  {
+    isActive_ = false;
+    // dynamic_target_active_ = false;
+    // dynamic_target_.reset();
+    // active_target_name_.clear();
+  }
 
   void JointTarget::configure(const JointTargetConfig &config)
   {
@@ -29,23 +32,9 @@ namespace manager_core
     }
   }
 
-  std::optional<std::string> JointTarget::validate(const RobotContext &context) const
+  void addJointTarget(const std::string &name, const Eigen::VectorXd &joints)
   {
-    return std::optional<std::string>();
-  }
-
-  void JointTarget::reset()
-  {
-      isActive_ = false;
-      // dynamic_target_active_ = false;
-      // dynamic_target_.reset();
-      // active_target_name_.clear();
-  }
-
-  CartesianCommand JointTarget::update(const CartesianCommand &input, const RobotContext &context,
-                                       double dt_sec)
-  {
-    return CartesianCommand();
+    ;
   }
 
   std::string JointTarget::name() const
@@ -53,22 +42,18 @@ namespace manager_core
     return "joint_target";
   }
 
+  std::string JointTarget::activeTargetName() const
+  {
+    return active_target_.name;
+  }
+
+  std::optional<std::string> JointTarget::validate(const RobotContext &context) const
+  {
+    return std::optional<std::string>();
+  }
+
   bool JointTarget::start(const std::string &target_name, const RobotContext &context,
-             std::string *error)
-  {
-    return true;
-  }
-
-  /*bool JointTarget::start(const Eigen::VectorXd &target, std::string *error = nullptr)
-  {
-    return true;
-  }*/
-
-  std::optional<std::string> validate(const RobotContext &context)
-  {
-    return std::nullopt;
-  }
-  bool isComplete(const RobotContext &context)
+                          std::string *error)
   {
     return true;
   }
@@ -89,25 +74,21 @@ namespace manager_core
     return isActive_;
   }
 
-  std::string JointTarget::activeTargetName() const
-  {
-    return active_target_.name;
-  }
-
-  void addJointTarget(const std::string &name, const Eigen::VectorXd &joints)
-  {
-    ;
-  }
-
   bool JointTarget::setActiveTarget(const std::string &name)
   {
-    if(!hasTarget(name)){
+    if (!hasTarget(name))
+    {
       return false;
     }
 
     active_target_ = joint_targets_[name];
     return true;
+  }
 
+  CartesianCommand JointTarget::update(const CartesianCommand &input, const RobotContext &context,
+                                       double dt_sec)
+  {
+    return CartesianCommand();
   }
 
   const JointTargetCommand *JointTarget::activeTarget() const
@@ -148,7 +129,7 @@ namespace manager_core
 
     if (error.lpNorm<Eigen::Infinity>() <= config_.position_tolerance)
     { // Calcule la norme infinie de error et compare avec la tolerance
-      //isActive_ = false;
+      // isActive_ = false;
       //"Joint target reached; returning to Cartesian QP control."
     }
     else
