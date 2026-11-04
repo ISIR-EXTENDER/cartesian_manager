@@ -37,6 +37,7 @@ namespace manager_core
     registerGeometricShaper(Geometrics::JACO, std::make_unique<JacoShaper>(config.jaco));
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
+    std::cout << "Initial config size : " << joint_target_config_.target_names.size() << std::endl;
     registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
     registerBehaviour(Behaviours::JOINT_TARGET,
                       std::make_unique<JointTarget>(config.joint_targets));
@@ -221,6 +222,7 @@ namespace manager_core
     if (!joint_target_.setActiveTarget(target_name)) // essaye de setActiveTarget
       return false;
 
+    std::cout << "ici c'est actif" << std::endl;
     behaviour_state_ = Behaviours::JOINT_TARGET;
     rate_limiter_.reset();
     return true;
@@ -229,6 +231,7 @@ namespace manager_core
   std::optional<JointVelocityCommand> Manager::activeJointTargetCommand(
       const RobotContext &robot_context) const
   {
+
     if (behaviour_state_ != Behaviours::JOINT_TARGET)
       return std::nullopt;
 
@@ -365,6 +368,7 @@ namespace manager_core
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
     {
+
       rate_limiter_.reset();
       return CartesianVelocity{};
     }
@@ -387,6 +391,7 @@ namespace manager_core
     auto command = behaviour_state_ == Behaviours::POSE_TARGET
                        ? std::optional<CartesianCommand>(CartesianCommand{})
                        : input_manager_.getFullCommand(now_sec, context);
+
     if (command)
     {
       applyGeometric(*command, context, dt_sec);

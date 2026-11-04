@@ -183,7 +183,10 @@ namespace ros_cartesian_manager
 
         manager_core::JointTargetCommand target;
         target.name = target_names[target_index];
-        target.positions.assign(first, last);
+        target.positions = Eigen::Map<const Eigen::VectorXd>(
+            positions.data() + first_position, static_cast<Eigen::Index>(joint_count));
+            
+        // target.positions.assign(first, last);
         targets.push_back(std::move(target));
       }
 
@@ -257,8 +260,7 @@ namespace ros_cartesian_manager
       return config;
     }
 
-    manager_core::JointTargetConfig makeJointTargetConfig(
-        const cartesian_manager::Params &params)
+    manager_core::JointTargetConfig makeJointTargetConfig(const cartesian_manager::Params &params)
     {
       const auto &joint_target_params = params.behaviours.joint_targets;
 

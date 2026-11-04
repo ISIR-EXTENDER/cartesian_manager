@@ -604,8 +604,8 @@ namespace ros_cartesian_manager
 
       manager_.setJointTarget(joint_target_name); // remplacer par une focntion de la classe
       std::optional<manager_core::JointVelocityCommand> command = manager_.activeJointTargetCommand(robot_context_);
-
-      publishJointVelocityCommand(command); // ADDED robot_context as an argument
+      RCLCPP_INFO(get_logger(), "Target : %s", joint_target_name.c_str());
+      publishJointVelocityCommand(command);
       // publishJointTargetCommand(manager_.activeJointTargetCommand());
       manager_.setMode(kBehaviourPassthroughMode);
       return;
@@ -657,6 +657,7 @@ namespace ros_cartesian_manager
   {
     if (command)
     {
+      RCLCPP_INFO(get_logger(), "Commande envoyée : %s", command->joint_speed);
       topic_manager_.publish(kJointTargetCommandPublisher,
                              jointVelocityTargetToMsg(*command, now()));
       return;

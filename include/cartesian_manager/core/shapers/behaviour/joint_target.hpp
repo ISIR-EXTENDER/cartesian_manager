@@ -15,7 +15,7 @@ namespace manager_core
   {
     std::string name;
     std::vector<std::string> joint_names;
-    std::vector<double> positions;
+    Eigen::VectorXd positions;
   };
 
   struct JointVelocityCommand

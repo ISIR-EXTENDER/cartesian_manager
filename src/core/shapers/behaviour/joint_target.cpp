@@ -3,12 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <utility>
+#include <iostream>
 
 namespace manager_core
 {
 
   JointTarget::JointTarget(const JointTargetConfig &config)
   {
+    std::cout << "Config size : " << config.target_names.size() << std::endl;
     configure(config);
   }
 
@@ -65,6 +67,7 @@ namespace manager_core
 
   bool JointTarget::hasTarget(const std::string &name) const
   {
+    std::cout << "taille : " << joint_targets_.size() << std::endl;
     return joint_targets_.find(name) !=
            joint_targets_.end(); // True si name est dans joint_targets_, faux sinon
   }
@@ -82,6 +85,8 @@ namespace manager_core
     }
 
     active_target_ = joint_targets_[name];
+    std::cout << "bien active" << std::endl;
+    isActive_ = true;
     return true;
   }
 
@@ -105,26 +110,28 @@ namespace manager_core
 
   JointVelocityCommand JointTarget::getJointVelocityCommand(const RobotContext &context) const
   {
-    Eigen::VectorXd robot_position = context.joint_positions;
-    Eigen::VectorXd qd; // TODO : a definir
+    Eigen::VectorXd robot_position = context.joint_positions; // qd
+    Eigen::VectorXd target = active_target_.positions;
     JointVelocityCommand velocity_command;
 
     if (!isActive())
     {
+      std::cout << "Target not active" << std::endl;
       return velocity_command;
     }
 
-    if (qd.size() != robot_position.size())
+    if (target.size() != robot_position.size())
     {
+      std::cout << "Size mismatch" << std::endl;
       return velocity_command;
     }
 
-    Eigen::VectorXd target_velocity = Eigen::VectorXd::Zero(qd.size());
+    Eigen::VectorXd target_velocity = Eigen::VectorXd::Zero(target.size());
     Eigen::VectorXd error(robot_position.size());
 
-    for (Eigen::Index i = 0; i < qd.size(); ++i)
+    for (Eigen::Index i = 0; i < target.size(); ++i)
     {
-      error[i] = std::remainder(robot_position[i] - qd[i], 2.0 * M_PI);
+      error[i] = std::remainder(robot_position[i] - target[i], 2.0 * M_PI);
     }
 
     if (error.lpNorm<Eigen::Infinity>() <= config_.position_tolerance)
@@ -153,6 +160,7 @@ namespace manager_core
 
     velocity_command.joint_names = config_.joint_names; // Joint names par defaut [q1 -> q6-7]
     velocity_command.joint_speed = target_velocity;
+    std::cout << "JointTarget.getJointVelocityCommand : " << velocity_command.joint_speed << std::endl;
     return velocity_command;
   }
 
