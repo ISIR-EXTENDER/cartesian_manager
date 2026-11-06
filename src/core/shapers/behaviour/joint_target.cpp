@@ -10,7 +10,6 @@ namespace manager_core
 
   JointTarget::JointTarget(const JointTargetConfig &config)
   {
-    std::cout << "Config size : " << config.target_names.size() << std::endl;
     configure(config);
   }
 
@@ -138,10 +137,6 @@ namespace manager_core
       error[i] = std::remainder(target[i] - robot_position[i], 2.0 * M_PI);
     }
 
-    std::cout << "POSITION : " << robot_position << std::endl;
-    std::cout << "TARGET : " << target << std::endl;
-    std::cout << "ERREUR : " << error << std::endl;
-
     if (error.lpNorm<Eigen::Infinity>() <= config_.position_tolerance)
     { // Calcule la norme infinie de error et compare avec la tolerance
       isActive_ = false;
@@ -150,8 +145,7 @@ namespace manager_core
     }
     else
     {
-      std::cout << "gain : " << config_.velocity_gain << " Max : " << config_.max_velocity
-                << std::endl;
+
       target_velocity = config_.velocity_gain * error;
       const double max_velocity = std::max(0.0, config_.max_velocity);
       if (max_velocity == 0.0)
@@ -171,8 +165,6 @@ namespace manager_core
 
     velocity_command.joint_names = config_.joint_names; // Joint names par defaut [q1 -> q6-7]
     velocity_command.joint_speed = target_velocity;
-    std::cout << "COMMANDE : " << velocity_command.joint_speed
-              << std::endl;
     return velocity_command;
   }
 

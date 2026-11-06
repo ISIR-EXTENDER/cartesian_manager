@@ -38,7 +38,6 @@ namespace manager_core
     registerGeometricShaper(Geometrics::JACO, std::make_unique<JacoShaper>(config.jaco));
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
-    std::cout << "Initial config size : " << joint_target_config_.target_names.size() << std::endl;
     registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
     registerBehaviour(Behaviours::JOINT_TARGET,
                       std::make_unique<JointTarget>(config.joint_targets));
