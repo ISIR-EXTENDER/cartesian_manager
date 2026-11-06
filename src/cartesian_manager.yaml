@@ -210,10 +210,17 @@ cartesian_manager:
         description: "Names for configured joint-space targets."
       positions:
         type: double_array
-        default_value: [0.0]
+        default_value: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         read_only: true
         description: "Flattened target joint positions, in target_names order. Each target has joint_names.size() positions."
-
+      velocity_gain:
+        type: double
+        default_value: 0.0
+        description: "Proportional gain applied on joint tasks."
+      max_velocity:
+        type: double
+        default_value: 0.0
+        description: "Maximal velocity on joint tasks"
     pose_targets:
       target_names:
         type: string_array

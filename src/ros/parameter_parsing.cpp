@@ -271,8 +271,13 @@ namespace ros_cartesian_manager
       auto target_names = normalizedNonEmptyNames(joint_target_params.target_names);
       requireUniqueNames(target_names, "behaviours.joint_targets.target_names");
 
+      config.target_names = target_names;
       config.positions =
           makeJointTargets(target_names, joint_target_params.positions, config.joint_names.size());
+        
+      config.max_velocity = joint_target_params.max_velocity;
+      config.velocity_gain = joint_target_params.velocity_gain;
+
       return config;
     }
   } // namespace
