@@ -4,6 +4,7 @@
 #include <optional>
 #include <sstream>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace manager_core
@@ -222,20 +223,20 @@ namespace manager_core
     if (!joint_target_.setActiveTarget(target_name)) // essaye de setActiveTarget
       return false;
 
-    std::cout << "ici c'est actif" << std::endl;
     behaviour_state_ = Behaviours::JOINT_TARGET;
     rate_limiter_.reset();
     return true;
   }
 
-  std::optional<JointVelocityCommand> Manager::activeJointTargetCommand(
-      const RobotContext &robot_context) const
+  JointVelocityCommand Manager::activeJointTargetCommand(const RobotContext &robot_context)
   {
 
-    if (behaviour_state_ != Behaviours::JOINT_TARGET)
-      return std::nullopt;
+    JointVelocityCommand command;
 
-    JointVelocityCommand command = joint_target_.getJointVelocityCommand(robot_context);
+    if (behaviour_state_ != Behaviours::JOINT_TARGET)
+      return command;
+
+    command = joint_target_.getJointVelocityCommand(robot_context);
     return command;
 
     /*
@@ -363,14 +364,15 @@ namespace manager_core
     return nullptr;
   }
 
-  std::optional<CartesianCommand> Manager::update(double now_sec, double dt_sec,
-                                                  const RobotContext &context)
+  std::variant<CartesianCommand, JointVelocityCommand> Manager::update(double now_sec,
+                                                                       double dt_sec,
+                                                                       const RobotContext &context)
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
     {
-
+      JointVelocityCommand command = activeJointTargetCommand(context);
       rate_limiter_.reset();
-      return CartesianVelocity{};
+      return command;
     }
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
@@ -389,7 +391,7 @@ namespace manager_core
     }
 
     auto command = behaviour_state_ == Behaviours::POSE_TARGET
-                       ? std::optional<CartesianCommand>(CartesianCommand{})
+                       ? CartesianCommand{}
                        : input_manager_.getFullCommand(now_sec, context);
 
     if (command)
@@ -412,11 +414,11 @@ namespace manager_core
         command->angular /= ang_norm;
       }
       rate_limiter_.update(*command, dt_sec);
+      return command.value();
     }
-    else
-      rate_limiter_.reset();
 
-    return command;
+    rate_limiter_.reset();
+    return CartesianCommand{};
   }
 
 } // namespace manager_core

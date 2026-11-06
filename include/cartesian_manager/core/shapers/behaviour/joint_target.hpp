@@ -60,7 +60,7 @@ namespace manager_core
     CartesianCommand update(const CartesianCommand &input, const RobotContext &context,
                             double dt_sec) override;
     const JointTargetCommand *activeTarget() const;
-    JointVelocityCommand getJointVelocityCommand(const RobotContext &context) const;
+    JointVelocityCommand getJointVelocityCommand(const RobotContext &context);
 
   private:
     std::unordered_map<std::string, JointTargetCommand> joint_targets_;

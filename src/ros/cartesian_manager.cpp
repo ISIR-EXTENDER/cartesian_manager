@@ -5,6 +5,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "diagnostic_msgs/msg/diagnostic_status.hpp"
@@ -602,12 +603,9 @@ namespace ros_cartesian_manager
       std::string joint_target_name = normalized_mode_request.substr(
           strlen(kJointTargetModePrefix)); // extrait home ou wrist_return du msg normalise
 
-      manager_.setJointTarget(joint_target_name); // remplacer par une focntion de la classe
-      std::optional<manager_core::JointVelocityCommand> command = manager_.activeJointTargetCommand(robot_context_);
+      manager_.setJointTarget(joint_target_name);
       RCLCPP_INFO(get_logger(), "Target : %s", joint_target_name.c_str());
-      publishJointVelocityCommand(command);
-      // publishJointTargetCommand(manager_.activeJointTargetCommand());
-      manager_.setMode(kBehaviourPassthroughMode);
+      //manager_.setMode(kBehaviourPassthroughMode);
       return;
     }
 
@@ -657,7 +655,7 @@ namespace ros_cartesian_manager
   {
     if (command)
     {
-      RCLCPP_INFO(get_logger(), "Commande envoyée : %s", command->joint_speed);
+
       topic_manager_.publish(kJointTargetCommandPublisher,
                              jointVelocityTargetToMsg(*command, now()));
       return;
@@ -684,10 +682,18 @@ namespace ros_cartesian_manager
 
     const auto now = this->now();
     const auto command =
-        manager_.update(now.seconds(), 1.0 / config_.update_rate_hz, robot_context_)
-            .value_or(manager_core::CartesianVelocity{});
-    topic_manager_.publish(kOutputCommandPublisher,
-                           commandToMsg(command, now, config_.output_frame_id));
+        manager_.update(now.seconds(), 1.0 / config_.update_rate_hz, robot_context_);
+
+    if (manager_.behaviourState() == manager_core::Behaviours::JOINT_TARGET)
+    {
+      publishJointVelocityCommand(std::get<manager_core::JointVelocityCommand>(command));
+    }
+    else if (manager_.behaviourState() == manager_core::Behaviours::PASSTHROUGH)
+    {
+      topic_manager_.publish(kOutputCommandPublisher,
+                             commandToMsg(std::get<manager_core::CartesianVelocity>(command), now, config_.output_frame_id));
+    }
+
     publishStatus();
   }
 } // namespace ros_cartesian_manager

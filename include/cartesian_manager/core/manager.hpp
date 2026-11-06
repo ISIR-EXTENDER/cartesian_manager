@@ -1,11 +1,12 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <iostream>
+#include <variant>
 
 #include "cartesian_manager/core/input_manager.hpp"
 
@@ -49,16 +50,16 @@ namespace manager_core
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
     bool setJointTarget(const std::string &target_name, std::string *error = nullptr);
-    // std::optional<JointTargetCommand> activeJointTargetCommand(const RobotContext &context) const;
-    std::optional<JointVelocityCommand> activeJointTargetCommand(const RobotContext &robot_context) const;
-    
+    // std::optional<JointTargetCommand> activeJointTargetCommand(const RobotContext &context)
+    // const;
+    JointVelocityCommand activeJointTargetCommand(const RobotContext &robot_context);
 
     Geometrics geometricState() const;
     Behaviours behaviourState() const;
     std::string activeTargetName() const;
 
-    std::optional<CartesianVelocity> update(double now_sec, double dt_sec,
-                                            const RobotContext &context);
+    std::variant<CartesianCommand, JointVelocityCommand> update(double now_sec, double dt_sec,
+                                                              const RobotContext &context);
 
     InputManager getInputManager() const
     {
