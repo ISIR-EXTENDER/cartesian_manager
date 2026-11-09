@@ -41,6 +41,7 @@ namespace ros_cartesian_manager
     void joystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void handJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void faceJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
+    void mouseJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void tabletSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void visualServoingSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
 

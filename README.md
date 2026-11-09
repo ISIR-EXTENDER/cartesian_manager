@@ -199,6 +199,9 @@ The Explorer and Kinova configurations declare `hand_joystick` as an independent
 input alongside the physical joystick and tablet. It uses
 `topics.hand_joystick_command` (`/hand_joystick_cartesian_command`) and has its own
 `inputs.hand_joystick.enabled` and `inputs.hand_joystick.timeout_sec` (0.2 s).
+The `mouse_joystick` source is configured independently in the same way, using
+`topics.mouse_joystick_command` (`/mouse_joystick_cartesian_command`) and
+`inputs.mouse_joystick.enabled` and `inputs.mouse_joystick.timeout_sec` (0.2 s).
 Enabled, fresh input commands are summed by the manager.
 
 ## Important Topics
@@ -209,6 +212,7 @@ Default topics from `bringup/config/explorer_params.yaml`:
 | --- | --- | --- | --- |
 | `/physical_joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Physical joystick Cartesian velocity command. |
 | `/face_joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Face joystick Cartesian velocity command. |
+| `/mouse_joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Mouse joystick Cartesian velocity command. |
 | `/hand_joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Hand joystick Cartesian velocity command. |
 | `/tablet_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Tablet Cartesian velocity command. |
 | `/visual_servoing_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Visual-servoing Cartesian velocity command. |
