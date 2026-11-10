@@ -156,6 +156,8 @@ namespace ros_cartesian_manager
       {
       case manager_core::InputSource::JOYSTICK:
         return "joystick";
+      case manager_core::InputSource::HAND_JOYSTICK:
+        return "hand_joystick";
       case manager_core::InputSource::TABLET:
         return "tablet";
       case manager_core::InputSource::VISUAL_SERVOING:
@@ -386,6 +388,12 @@ namespace ros_cartesian_manager
             "joystick_command", config_.topics.joystick_command,
             std::bind(&CartesianManagerROS::joystickSubscriberCallback, this, std::placeholders::_1));
         break;
+      case manager_core::InputSource::HAND_JOYSTICK:
+        topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
+            "hand_joystick_command", config_.topics.hand_joystick_command,
+            std::bind(&CartesianManagerROS::handJoystickSubscriberCallback, this,
+                      std::placeholders::_1));
+        break;
       case manager_core::InputSource::TABLET:
         topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
             "tablet_command", config_.topics.tablet_command,
@@ -417,6 +425,25 @@ namespace ros_cartesian_manager
     {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
                            "Ignoring joystick command because the source is not configured");
+    }
+  }
+
+  void CartesianManagerROS::handJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  {
+    const auto now_sec = topic_manager_.nowSec();
+    const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
+    const manager_core::FramesConfig temp_frames = config_.manager.frames;
+    const auto command = twistToCommand(msg, config_.default_input_frame_id);
+    if (input_frame_id == temp_frames.hybrid_frame)
+    {
+      robot_context_.updateHybridPose(command.angular);
+    }
+
+    if (!manager_.setInputCommand(manager_core::InputSource::HAND_JOYSTICK, command,
+                                  stampSec(msg.header.stamp, now_sec)))
+    {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+                           "Ignoring hand joystick command because the source is not configured");
     }
   }
 

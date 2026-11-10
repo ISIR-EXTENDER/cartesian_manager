@@ -19,6 +19,7 @@ namespace ros_cartesian_manager
   struct TopicConfig
   {
     std::string joystick_command;
+    std::string hand_joystick_command;
     std::string tablet_command;
     std::string visual_servoing_command;
     std::string mode_request;

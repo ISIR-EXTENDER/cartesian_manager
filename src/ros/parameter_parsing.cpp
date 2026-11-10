@@ -95,6 +95,9 @@ namespace ros_cartesian_manager
       if (name == "joystick")
         return manager_core::InputSource::JOYSTICK;
 
+      if (name == "hand_joystick")
+        return manager_core::InputSource::HAND_JOYSTICK;
+
       if (name == "tablet")
         return manager_core::InputSource::TABLET;
 
@@ -113,6 +116,11 @@ namespace ros_cartesian_manager
         requirePositive(params.inputs.joystick.timeout_sec, "inputs.joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.joystick.timeout_sec,
                                          params.inputs.joystick.enabled};
+
+      case manager_core::InputSource::HAND_JOYSTICK:
+        requirePositive(params.inputs.hand_joystick.timeout_sec, "inputs.hand_joystick.timeout_sec");
+        return manager_core::InputConfig{source, params.inputs.hand_joystick.timeout_sec,
+                                         params.inputs.hand_joystick.enabled};
 
       case manager_core::InputSource::TABLET:
         requirePositive(params.inputs.tablet.timeout_sec, "inputs.tablet.timeout_sec");
@@ -270,6 +278,10 @@ namespace ros_cartesian_manager
         params.inputs.joystick.timeout_sec = param.as_double();
       else if (name == "inputs.joystick.enabled")
         params.inputs.joystick.enabled = param.as_bool();
+      else if (name == "inputs.hand_joystick.timeout_sec")
+        params.inputs.hand_joystick.timeout_sec = param.as_double();
+      else if (name == "inputs.hand_joystick.enabled")
+        params.inputs.hand_joystick.enabled = param.as_bool();
       else if (name == "inputs.tablet.timeout_sec")
         params.inputs.tablet.timeout_sec = param.as_double();
       else if (name == "inputs.tablet.enabled")
@@ -313,6 +325,7 @@ namespace ros_cartesian_manager
     requireAtMost(config.update_rate_hz, kMaxUpdateRateHz, "update_rate_hz");
 
     config.topics.joystick_command = params.topics.joystick_command;
+    config.topics.hand_joystick_command = params.topics.hand_joystick_command;
     config.topics.tablet_command = params.topics.tablet_command;
     config.topics.visual_servoing_command = params.topics.visual_servoing_command;
     config.topics.mode_request = params.topics.mode_request;
@@ -361,6 +374,9 @@ namespace ros_cartesian_manager
       {
       case manager_core::InputSource::JOYSTICK:
         requireNonEmpty(config.topics.joystick_command, "topics.joystick_command");
+        break;
+      case manager_core::InputSource::HAND_JOYSTICK:
+        requireNonEmpty(config.topics.hand_joystick_command, "topics.hand_joystick_command");
         break;
       case manager_core::InputSource::TABLET:
         requireNonEmpty(config.topics.tablet_command, "topics.tablet_command");

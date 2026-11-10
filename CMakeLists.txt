@@ -116,6 +116,9 @@ ament_export_dependencies(
 )
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_hand_joystick test/test_hand_joystick.cpp)
+  target_link_libraries(test_hand_joystick ${PROJECT_NAME}_ros)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files

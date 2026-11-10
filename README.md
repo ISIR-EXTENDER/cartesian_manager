@@ -195,6 +195,12 @@ The launch/config files are installed from:
 - `bringup/launch/explorer.launch.py`
 - `bringup/config/explorer_params.yaml`
 
+The Explorer and Kinova configurations declare `hand_joystick` as an independent
+input alongside the physical joystick and tablet. It uses
+`topics.hand_joystick_command` (`/hand_joystick_cartesian_command`) and has its own
+`inputs.hand_joystick.enabled` and `inputs.hand_joystick.timeout_sec` (0.2 s).
+Enabled, fresh input commands are summed by the manager.
+
 ## Important Topics
 
 Default topics from `bringup/config/explorer_params.yaml`:
@@ -202,6 +208,7 @@ Default topics from `bringup/config/explorer_params.yaml`:
 | Topic | Type | Direction | Meaning |
 | --- | --- | --- | --- |
 | `/joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Joystick Cartesian velocity command. |
+| `/hand_joystick_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Hand joystick Cartesian velocity command. |
 | `/tablet_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Tablet Cartesian velocity command. |
 | `/visual_servoing_cartesian_command` | `geometry_msgs/msg/TwistStamped` | input | Visual-servoing Cartesian velocity command. |
 | `/mode_request` | `std_msgs/msg/String` | input | Mode selection request. |
