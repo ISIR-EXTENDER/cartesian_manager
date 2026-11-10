@@ -368,6 +368,7 @@ namespace ros_cartesian_manager
     config.topics.ee_jac = params.topics.ee_jac;
     config.topics.joint_states = params.topics.joint_states;
     config.topics.joint_target_command = params.topics.joint_target_command;
+    config.topics.joint_target_sliders = params.topics.joint_target_sliders;
     config.topics.output_command = params.topics.output_command;
     config.topics.qontrol_controller_commands = params.topics.qontrol_controller_commands;
 
@@ -378,7 +379,9 @@ namespace ros_cartesian_manager
     requireNonEmpty(config.topics.ee_jac, "topics.ee_jac");
     requireNonEmpty(config.topics.joint_states, "topics.joint_states");
     requireNonEmpty(config.topics.joint_target_command, "topics.joint_target_command");
+    requireNonEmpty(config.topics.joint_target_sliders, "topics.joint_target_sliders");
     requireNonEmpty(config.topics.output_command, "topics.output_command");
+
 
     config.output_frame_id = params.frames.output_frame_id;
     config.default_input_frame_id = params.frames.default_input_frame_id;

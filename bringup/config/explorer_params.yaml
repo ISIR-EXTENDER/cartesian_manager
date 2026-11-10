@@ -73,6 +73,7 @@ cartesian_manager:
       ee_jac: /ee_jac
       joint_states: /joint_states
       joint_target_command: /joint_target_command
+      joint_target_sliders: /joint_target_sliders
       output_command: /cartesian_command
       qontrol_controller_commands: /qontrol_controller/commands
 

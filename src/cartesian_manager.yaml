@@ -98,6 +98,11 @@ cartesian_manager:
       default_value: "/joint_target_command"
       read_only: true
       description: "Topic carrying named joint-position targets for the downstream QP controller."
+    joint_target_sliders:
+      type: string
+      default_value: "/joint_target_sliders"
+      read_only: true
+      description: "Topic carrying the state of the sliders of mouse joystick interface for joint command."
     output_command:
       type: string
       default_value: "/cartesian_command"

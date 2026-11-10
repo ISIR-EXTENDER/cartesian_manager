@@ -11,6 +11,7 @@
 #include <diagnostic_msgs/msg/diagnostic_status.hpp>
 
 #include <sensor_msgs/msg/joint_state.hpp>
+#include "sensor_msgs/msg/joy.hpp"
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -35,6 +36,7 @@ namespace ros_cartesian_manager
     void poseTargetCallback(const geometry_msgs::msg::PoseStamped &pose_target);
 
     void jointStatesSubscriberCallback(const sensor_msgs::msg::JointState &msg);
+    void jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg);
     void eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg);
     void eeVelSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void eeJacobianSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg);
