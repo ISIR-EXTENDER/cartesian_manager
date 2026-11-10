@@ -62,7 +62,7 @@ cartesian_manager:
     topics:
       joystick_command: /physical_joystick_cartesian_command
       hand_joystick_command: /hand_joystick_cartesian_command
-      tablet_command: /tablet_cartesian_command
+      tablet_command: /joystick_cartesian_command
       visual_servoing_command: /visual_servoing_cartesian_command
       mode_request: /mode_request
       pose_target: /pose_target
