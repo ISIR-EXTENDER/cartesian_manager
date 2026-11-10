@@ -14,7 +14,9 @@ namespace manager_core
     JOYSTICK,
     TABLET,
     VISUAL_SERVOING,
-    HAND_JOYSTICK
+    HAND_JOYSTICK,
+    FACE_JOYSTICK,
+    MOUSE_JOYSTICK
   };
 
   enum class Geometrics

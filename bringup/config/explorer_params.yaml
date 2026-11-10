@@ -62,6 +62,8 @@ cartesian_manager:
     topics:
       joystick_command: /physical_joystick_cartesian_command
       hand_joystick_command: /hand_joystick_cartesian_command
+      face_joystick_command: /face_joystick_cartesian_command
+      mouse_joystick_command: /mouse_joystick_cartesian_command
       tablet_command: /joystick_cartesian_command
       visual_servoing_command: /visual_servoing_cartesian_command
       mode_request: /mode_request
@@ -78,11 +80,19 @@ cartesian_manager:
         - joystick
         - tablet
         - hand_joystick
+        - face_joystick
+        - mouse_joystick
         - visual_servoing
       joystick:
         timeout_sec: 0.2
         enabled: true
       hand_joystick:
+        timeout_sec: 0.2
+        enabled: true
+      face_joystick:
+        timeout_sec: 0.2
+        enabled: true
+      mouse_joystick:
         timeout_sec: 0.2
         enabled: true
       tablet:

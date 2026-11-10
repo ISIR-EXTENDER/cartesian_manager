@@ -21,6 +21,7 @@ gripper_controller:
 
 qontrol_explorer:
   ros__parameters:
+    reference_interface_name: velocity
     # Base parameters
     robot_description_origin: robot_state_publisher
     tip_frame: end_effector_link
@@ -32,7 +33,7 @@ qontrol_explorer:
     robot_command: position
 
     # Velocity parameters
-    command_max_linear_velocity: 0.1
+    command_max_linear_velocity: 0.05
     topic_max_linear_velocity: /explorer_user_interfaces/rqt_armcontrol/max_linear_speed
     command_max_angular_velocity: 0.2                                                         # command_max_angular_velocity = command_max_linear_velocity / characteristic_lenght    with characteristic_lenght (of the robot) = 0.5
     topic_max_angular_velocity: /explorer_user_interfaces/rqt_armcontrol/max_angular_speed
@@ -76,6 +77,8 @@ cartesian_manager:
     topics:
       joystick_command: /physical_joystick_cartesian_command
       hand_joystick_command: /hand_joystick_cartesian_command
+      mouse_joystick_command: /mouse_joystick_cartesian_command
+      face_joystick_command: /face_joystick_cartesian_command
       tablet_command: /joystick_cartesian_command
       visual_servoing_command: /visual_servoing_cartesian_command
       mode_request: /mode_request
@@ -92,11 +95,19 @@ cartesian_manager:
         - joystick
         - tablet
         - hand_joystick
+        - face_joystick
+        - mouse_joystick
         - visual_servoing
       joystick:
         timeout_sec: 0.2
         enabled: true
       hand_joystick:
+        timeout_sec: 0.2
+        enabled: true
+      face_joystick:
+        timeout_sec: 0.2
+        enabled: true
+      mouse_joystick:
         timeout_sec: 0.2
         enabled: true
       tablet:

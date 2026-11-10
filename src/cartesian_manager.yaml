@@ -43,6 +43,16 @@ cartesian_manager:
       default_value: "/hand_joystick_cartesian_command"
       read_only: true
       description: "Topic carrying hand joystick Cartesian commands."
+    face_joystick_command:
+      type: string
+      default_value: "/face_joystick_cartesian_command"
+      read_only: true
+      description: "Topic carrying face joystick Cartesian commands."
+    mouse_joystick_command:
+      type: string
+      default_value: "/mouse_joystick_cartesian_command"
+      read_only: true
+      description: "Topic carrying mouse joystick Cartesian commands."
     tablet_command:
       type: string
       default_value: "/tablet_cartesian_command"
@@ -97,9 +107,9 @@ cartesian_manager:
   inputs:
     sources:
       type: string_array
-      default_value: ["joystick", "tablet", "visual_servoing", "hand_joystick"]
+      default_value: ["joystick", "tablet", "visual_servoing", "hand_joystick", "face_joystick", "mouse_joystick"]
       read_only: true
-      description: "Declared input sources. Supported values: joystick, tablet, visual_servoing, hand_joystick."
+      description: "Declared input sources. Supported values: joystick, tablet, visual_servoing, hand_joystick, face_joystick, mouse_joystick."
     joystick:
       timeout_sec:
         type: double
@@ -118,6 +128,24 @@ cartesian_manager:
         type: bool
         default_value: true
         description: "Whether hand joystick input is enabled at startup."
+    face_joystick:
+      timeout_sec:
+        type: double
+        default_value: 0.2
+        description: "Maximum face joystick command age before it is ignored."
+      enabled:
+        type: bool
+        default_value: true
+        description: "Whether face joystick input is enabled at startup."
+    mouse_joystick:
+      timeout_sec:
+        type: double
+        default_value: 0.2
+        description: "Maximum mouse joystick command age before it is ignored."
+      enabled:
+        type: bool
+        default_value: true
+        description: "Whether mouse joystick input is enabled at startup."
     tablet:
       timeout_sec:
         type: double
