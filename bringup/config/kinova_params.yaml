@@ -40,6 +40,7 @@ qontrol_explorer:
     regularisation_weight: 1e-4
     topic_control_frame: /explorer_user_interfaces/rqt_armcontrol/control_frame_selection
     joint_target_topic_name: /joint_target_command
+    joint_target_sliders: /joint_target_sliders
     joint_target_gain: 1.0
     joint_target_max_velocity: 0.2
     joint_target_tolerance: 0.05

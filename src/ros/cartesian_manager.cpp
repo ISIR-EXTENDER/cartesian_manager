@@ -14,6 +14,7 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/string.hpp"
 
@@ -381,6 +382,11 @@ namespace ros_cartesian_manager
         std::bind(&CartesianManagerROS::jointStatesSubscriberCallback, this,
                   std::placeholders::_1));
 
+    topic_manager_.addSubscriber<sensor_msgs::msg::Joy>(
+        "joint_target_sliders", config_.topics.joint_target_sliders,
+        std::bind(&CartesianManagerROS::jointTargetSlidersSubscriberCallback, this,
+                  std::placeholders::_1));
+
     topic_manager_.addSubscriber<std_msgs::msg::Float64MultiArray>(
         "qontrol_controller_commands", config_.topics.qontrol_controller_commands,
         std::bind(&CartesianManagerROS::qontrolSubscriberCallback, this, std::placeholders::_1));
@@ -476,6 +482,11 @@ namespace ros_cartesian_manager
         msg.position.data(), static_cast<Eigen::Index>(msg.position.size()));
   }
 
+  void CartesianManagerROS::jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg)
+  {
+    RCLCPP_INFO(get_logger(), "Received joint target sliders message with %zu axes", msg.axes.size());
+  }
+
   void CartesianManagerROS::eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg)
   {
     robot_context_.ee_pose.position =
@@ -524,7 +535,7 @@ namespace ros_cartesian_manager
 
       manager_.setJointTarget(joint_target_name);
       RCLCPP_INFO(get_logger(), "Target : %s", joint_target_name.c_str());
-      //manager_.setMode(kBehaviourPassthroughMode);
+      // manager_.setMode(kBehaviourPassthroughMode);
       return;
     }
 
@@ -610,7 +621,8 @@ namespace ros_cartesian_manager
     else if (manager_.behaviourState() == manager_core::Behaviours::PASSTHROUGH)
     {
       topic_manager_.publish(kOutputCommandPublisher,
-                             commandToMsg(std::get<manager_core::CartesianVelocity>(command), now, config_.output_frame_id));
+                             commandToMsg(std::get<manager_core::CartesianVelocity>(command), now,
+                                          config_.output_frame_id));
     }
 
     publishStatus();
