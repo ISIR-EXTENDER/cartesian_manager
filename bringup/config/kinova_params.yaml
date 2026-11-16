@@ -132,8 +132,9 @@ cartesian_manager:
     behaviours:
       joint_targets:
         joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7]
-        target_names: [home]
-        positions: [0.0, 0.2617, 3.1415, -2.26, 0.0, 0.96, 1.57]
+        target_names: [home, joint_sliders]
+        positions: [0.0, 0.2617, 3.1415, -2.26, 0.0, 0.96, 1.57,
+                    0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
       pose_targets:
         target_names: [ready]
         frame_ids: [base_link]

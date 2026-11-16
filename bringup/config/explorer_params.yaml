@@ -118,9 +118,10 @@ cartesian_manager:
     behaviours:
       joint_targets:
         joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
-        target_names: [home, wrist_return]
+        target_names: [home, wrist_return, joint_sliders]
         positions: [0.0, -0.3, 2.1, 0.0, 0.9, 0.0, 
-                    0.0, -0.3, 2.1, 0.0, 0.9, 0.0]
+                    0.0, -0.3, 2.1, 0.0, 0.9, 0.0,
+                    0.0,  0.0, 0.0, 0.0, 0.0, 0.0]
         velocity_gain: 2.0
         max_velocity: 0.5
         
