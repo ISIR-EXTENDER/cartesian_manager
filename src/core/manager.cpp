@@ -227,6 +227,18 @@ namespace manager_core
     return true;
   }
 
+  bool Manager::setJointTarget(Eigen::VectorXd &joints, std::string *error)
+  {
+
+    if (!joint_target_.setActiveTarget("joint_sliders")) // essaye de setActiveTarget joint_sliders
+      return false;
+    
+    joint_target_.update(joints);
+    behaviour_state_ = Behaviours::JOINT_TARGET;
+    rate_limiter_.reset();
+    return true;
+  }
+
   JointVelocityCommand Manager::activeJointTargetCommand(const RobotContext &robot_context)
   {
 

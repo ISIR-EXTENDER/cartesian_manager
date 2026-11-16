@@ -565,7 +565,8 @@ namespace ros_cartesian_manager
 
   void CartesianManagerROS::jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg)
   {
-    RCLCPP_INFO(get_logger(), "Received joint target sliders message with %zu axes", msg.axes.size());
+    RCLCPP_DEBUG(get_logger(), "Received joint target sliders message with %zu axes", msg.axes.size());
+    
   }
 
   void CartesianManagerROS::eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg)
