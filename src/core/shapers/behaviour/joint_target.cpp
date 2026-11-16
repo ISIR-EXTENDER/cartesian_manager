@@ -16,9 +16,6 @@ namespace manager_core
   void JointTarget::reset()
   {
     isActive_ = false;
-    // dynamic_target_active_ = false;
-    // dynamic_target_.reset();
-    // active_target_name_.clear();
   }
 
   void JointTarget::configure(const JointTargetConfig &config)
@@ -33,9 +30,13 @@ namespace manager_core
     }
   }
 
-  void addJointTarget(const std::string &name, const Eigen::VectorXd &joints)
+  void JointTarget::addJointTarget(const std::string &name, const Eigen::VectorXd &joints)
   {
-    ;
+    JointTargetCommand target;
+    target.name = name;
+    target.positions = joints;
+    config_.target_names.push_back(name);
+    config_.positions.push_back(target);
   }
 
   std::string JointTarget::name() const
@@ -59,14 +60,22 @@ namespace manager_core
     return true;
   }
 
+  bool JointTarget::update(Eigen::VectorXd &joints) //Only usable for joint_sliders target
+  {
+    if(!isActive_ || active_target_.name != "joint_sliders")
+      return false;
+    
+    active_target_.positions = joints;
+    return true;
+  }
+
   bool JointTarget::isComplete(const RobotContext &context) const
   {
-    return false;
+    return !isActive_; 
   }
 
   bool JointTarget::hasTarget(const std::string &name) const
   {
-    std::cout << "taille : " << joint_targets_.size() << std::endl;
     return joint_targets_.find(name) !=
            joint_targets_.end(); // True si name est dans joint_targets_, faux sinon
   }
@@ -84,7 +93,6 @@ namespace manager_core
     }
 
     active_target_ = joint_targets_[name];
-    std::cout << "bien active" << std::endl;
     isActive_ = true;
     return true;
   }
@@ -117,19 +125,19 @@ namespace manager_core
 
     if (!isActive())
     {
-      std::cout << "Target not active" << std::endl;
+      std::cout << "[ERROR] Target not active ! " << std::endl;
       return velocity_command;
     }
 
     if (target.size() != robot_position.size())
     {
-      std::cout << "Size mismatch : " << target.size() << " != " << robot_position.size()
+      std::cout << "[ERROR] Size mismatch : " << target.size() << " != " << robot_position.size()
                 << std::endl;
       return velocity_command;
     }
 
     Eigen::VectorXd target_velocity = Eigen::VectorXd::Zero(target.size());
-    velocity_command.joint_speed = target_velocity; //Set zero
+    velocity_command.joint_speed = target_velocity; // Set zero
     Eigen::VectorXd error(robot_position.size());
 
     for (Eigen::Index i = 0; i < target.size(); ++i)
