@@ -5,8 +5,8 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include <variant>
+#include <vector>
 
 #include "cartesian_manager/core/input_manager.hpp"
 
@@ -39,7 +39,7 @@ namespace manager_core
     void addInputChannel(InputSource source, double timeout_sec, bool enabled = true);
     void configureInputChannels(const std::vector<InputConfig> &channels);
     void clearInputChannels();
-    void updateJointTargetName(std::string& joint_target_name);
+    void updateJointTargetName(std::string &joint_target_name);
 
     void enableInput(InputSource source);
     void disableInput(InputSource source);
@@ -50,8 +50,8 @@ namespace manager_core
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
     bool setJointTarget(const std::string &target_name, std::string *error = nullptr);
-    // std::optional<JointTargetCommand> activeJointTargetCommand(const RobotContext &context)
-    // const;
+    bool setJointTarget(Eigen::VectorXd &joints, std::string *error = nullptr);
+
     JointVelocityCommand activeJointTargetCommand(const RobotContext &robot_context);
 
     Geometrics geometricState() const;
@@ -59,7 +59,7 @@ namespace manager_core
     std::string activeTargetName() const;
 
     std::variant<CartesianCommand, JointVelocityCommand> update(double now_sec, double dt_sec,
-                                                              const RobotContext &context);
+                                                                const RobotContext &context);
 
     InputManager getInputManager() const
     {
