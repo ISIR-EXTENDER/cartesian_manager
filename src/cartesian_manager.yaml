@@ -226,6 +226,10 @@ cartesian_manager:
         type: double
         default_value: 0.0
         description: "Maximal velocity on joint tasks"
+      position_tolerance:
+        type: double
+        default_value: 0.0
+        description: "Tolerance between command and position below which no movement is made"
     pose_targets:
       target_names:
         type: string_array
