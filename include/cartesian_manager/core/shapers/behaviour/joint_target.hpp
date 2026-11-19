@@ -57,6 +57,7 @@ namespace manager_core
     bool hasTarget(const std::string &name) const;
     bool isActive() const;
     bool setActiveTarget(const std::string &name);
+    bool setUnactive();
 
     CartesianCommand update(const CartesianCommand &input, const RobotContext &context,
                             double dt_sec) override;

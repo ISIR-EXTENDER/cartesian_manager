@@ -227,8 +227,10 @@ namespace manager_core
     return true;
   }
 
-  bool Manager::setJointTarget(Eigen::VectorXd &joints, std::string *error)
+  bool Manager::setJointTarget(Eigen::VectorXd &joints, bool active, std::string *error)
   {
+    if (!active && joint_target_.activeTargetName() == "joint_sliders")
+      return joint_target_.setUnactive();
 
     if (!joint_target_.setActiveTarget("joint_sliders")) // essaye de setActiveTarget joint_sliders
       return false;
@@ -380,7 +382,13 @@ namespace manager_core
                                                                        const RobotContext &context)
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
-    {
+    { 
+      RobotContext r; //TODO dégager la variable inutilede isComplete
+      if(joint_target_.isComplete(r)) {
+        setMode("behaviour/passthrough");
+        return JointVelocityCommand{};
+      }
+
       JointVelocityCommand command = activeJointTargetCommand(context);
       rate_limiter_.reset();
       return command;

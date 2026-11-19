@@ -484,7 +484,24 @@ namespace ros_cartesian_manager
 
   void CartesianManagerROS::jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg)
   {
-    RCLCPP_DEBUG(get_logger(), "Received joint target sliders message with %zu axes", msg.axes.size());
+    RCLCPP_INFO(get_logger(),
+                "Received joint target sliders message with %zu axes and %zu buttons",
+                msg.axes.size(), msg.buttons.size());
+    for (std::size_t i = 0; i < msg.buttons.size(); ++i)
+    {
+      RCLCPP_DEBUG(get_logger(), "Joy button[%zu] = %d", i, msg.buttons[i]);
+    }
+    
+    bool isActive = (msg.buttons[0] == 1);
+
+    Eigen::VectorXd target(msg.axes.size());
+
+    for (std::size_t i = 0; i < msg.axes.size(); ++i)
+    {
+      target[static_cast<Eigen::Index>(i)] = msg.axes[i];
+    }
+    
+    manager_.setJointTarget(target, isActive);
     
   }
 
@@ -615,14 +632,15 @@ namespace ros_cartesian_manager
     const auto command =
         manager_.update(now.seconds(), 1.0 / config_.update_rate_hz, robot_context_);
 
-    if (manager_.behaviourState() == manager_core::Behaviours::JOINT_TARGET)
+    if (const auto *joint_command =
+            std::get_if<manager_core::JointVelocityCommand>(&command))
     {
-      publishJointVelocityCommand(std::get<manager_core::JointVelocityCommand>(command));
+      publishJointVelocityCommand(*joint_command);
     }
     else if (manager_.behaviourState() == manager_core::Behaviours::PASSTHROUGH)
     {
       topic_manager_.publish(kOutputCommandPublisher,
-                             commandToMsg(std::get<manager_core::CartesianVelocity>(command), now,
+                             commandToMsg(std::get<manager_core::CartesianCommand>(command), now,
                                           config_.output_frame_id));
     }
 
