@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <utility>
 #include <iostream>
+#include <utility>
 
 namespace manager_core
 {
@@ -60,18 +60,18 @@ namespace manager_core
     return true;
   }
 
-  bool JointTarget::update(Eigen::VectorXd &joints) //Only usable for joint_sliders target
+  bool JointTarget::update(Eigen::VectorXd &joints) // Only usable for joint_sliders target
   {
-    if(!isActive_ || active_target_.name != "joint_sliders")
+    if (!isActive_ || active_target_.name != "joint_sliders")
       return false;
-    
+
     active_target_.positions = joints;
     return true;
   }
 
   bool JointTarget::isComplete(const RobotContext &context) const
   {
-    return !isActive_; 
+    return !isActive_;
   }
 
   bool JointTarget::hasTarget(const std::string &name) const
@@ -94,6 +94,15 @@ namespace manager_core
 
     active_target_ = joint_targets_[name];
     isActive_ = true;
+    return true;
+  }
+
+  bool JointTarget::setUnactive()
+  {
+    if (!isActive_)
+      return false;
+
+    isActive_ = false;
     return true;
   }
 
@@ -142,7 +151,7 @@ namespace manager_core
 
     for (Eigen::Index i = 0; i < target.size(); ++i)
     {
-      error[i] = std::remainder(target[i] - robot_position[i], 2.0 * M_PI);
+      error[i] = std::fmod(target[i] - robot_position[i], 2.0 * M_PI);
     }
 
     if (error.lpNorm<Eigen::Infinity>() <= config_.position_tolerance)
@@ -162,11 +171,10 @@ namespace manager_core
       }
       else
       {
-        for (Eigen::Index i = 0; i < target_velocity.size(); ++i)
+        const double target_velocity_norm = target_velocity.lpNorm<2>();
+        if (target_velocity_norm > max_velocity)
         {
-          target_velocity[i] = std::max(
-              -max_velocity,
-              std::min(max_velocity, target_velocity[i])); // Contraint la vitesse ntre -max et +max
+          target_velocity *= max_velocity/target_velocity_norm;
         }
       }
     }
