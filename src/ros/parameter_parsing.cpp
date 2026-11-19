@@ -253,6 +253,7 @@ namespace ros_cartesian_manager
         
       config.max_velocity = joint_target_params.max_velocity;
       config.velocity_gain = joint_target_params.velocity_gain;
+      config.position_tolerance = joint_target_params.position_tolerance;
 
       return config;
     }
