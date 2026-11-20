@@ -551,9 +551,8 @@ namespace ros_cartesian_manager
       std::string joint_target_name = normalized_mode_request.substr(
           strlen(kJointTargetModePrefix)); // extrait home ou wrist_return du msg normalise
 
-      manager_.setJointTarget(joint_target_name);
+      manager_.setJointTarget(joint_target_name, robot_context_);
       RCLCPP_INFO(get_logger(), "Target : %s", joint_target_name.c_str());
-      // manager_.setMode(kBehaviourPassthroughMode);
       return;
     }
 

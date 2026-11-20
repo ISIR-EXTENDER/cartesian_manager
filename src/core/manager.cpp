@@ -216,13 +216,14 @@ namespace manager_core
     return true;
   }
 
-  bool Manager::setJointTarget(const std::string &target_name, std::string *error)
+  bool Manager::setJointTarget(const std::string &target_name, const RobotContext &context, std::string *error)
   {
 
     if (!joint_target_.setActiveTarget(target_name)) // essaye de setActiveTarget
       return false;
 
     behaviour_state_ = Behaviours::JOINT_TARGET;
+    joint_target_.update(context.joint_positions);
     rate_limiter_.reset();
     return true;
   }
@@ -252,62 +253,6 @@ namespace manager_core
     command = joint_target_.getJointVelocityCommand(robot_context);
     return command;
 
-    /*
-    JointTargetCommand active_joint_target = *joint_target.activeTarget();
-
-    if (!active_joint_target)
-      return std::nullopt;
-
-
-        JointTargetCommand command;
-        command.name = target->name;
-        std::cout << "NOM :" << command.name << std::endl;
-        command.joint_names = joint_target_config_.joint_names;
-        if (command.name == "wrist_return")
-        { // position : wrist_return
-          command.positions = target->positions;
-          for (int i = 0; i < command.joint_names.size(); i++)
-          {
-            command.positions[i] = desired_joint_target[i];
-          }
-          // return wrist if possible wrist_return
-          if (desired_joint_target[3] < -(M_PI / 2))
-          {
-            if (desired_joint_target[5] < -(M_PI / 2))
-            {
-              command.positions[3] += M_PI;
-              command.positions[5] += M_PI;
-              command.positions[4] *= -1.0;
-            }
-            if (desired_joint_target[5] > (M_PI / 2))
-            {
-              command.positions[3] += M_PI;
-              command.positions[5] -= M_PI;
-              command.positions[4] *= -1.0;
-            }
-          }
-          if (desired_joint_target[3] > (M_PI / 2))
-          {
-            if (desired_joint_target[5] < -(M_PI / 2))
-            {
-              command.positions[3] -= M_PI;
-              command.positions[5] += M_PI;
-              command.positions[4] *= -1.0;
-            }
-            if (desired_joint_target[5] > (M_PI / 2))
-            {
-              command.positions[3] -= M_PI;
-              command.positions[5] -= M_PI;
-              command.positions[4] *= -1.0;
-            }
-          }
-        }
-        else
-        {
-          command.positions = target->positions; // position : HOME
-        }
-        return command;
-    */
   }
 
   Geometrics Manager::geometricState() const
