@@ -60,12 +60,56 @@ namespace manager_core
     return true;
   }
 
-  bool JointTarget::update(Eigen::VectorXd &joints) // Only usable for joint_sliders target
+  bool JointTarget::update(const Eigen::VectorXd &joints)
   {
-    if (!isActive_ || active_target_.name != "joint_sliders")
+    if (!isActive_ ||
+        (active_target_.name != "joint_sliders" && active_target_.name != "wrist_return"))
       return false;
 
-    active_target_.positions = joints;
+    Eigen::VectorXd robot_positions = joints;
+
+    if (robot_positions.size() != active_target_.positions.size())
+    {
+      std::cout << "[ERROR] JointTarget::update : Size mismatch : " << robot_positions.size()
+                << " != " << active_target_.positions.size() << std::endl;
+      return false;
+    }
+    std::cout << active_target_.name << std::endl;
+    active_target_.positions = robot_positions; // copie
+    if (active_target_.name == "wrist_return")
+    {
+      if (robot_positions[3] < -(M_PI / 2))
+      {
+        if (robot_positions[5] < -(M_PI / 2))
+        {
+          active_target_.positions[3] += M_PI;
+          active_target_.positions[5] += M_PI;
+          active_target_.positions[4] *= -1.0;
+        }
+        if (robot_positions[5] > (M_PI / 2))
+        {
+          active_target_.positions[3] += M_PI;
+          active_target_.positions[5] -= M_PI;
+          active_target_.positions[4] *= -1.0;
+        }
+      }
+      if (robot_positions[3] > (M_PI / 2))
+      {
+        if (robot_positions[5] < -(M_PI / 2))
+        {
+          active_target_.positions[3] -= M_PI;
+          active_target_.positions[5] += M_PI;
+          active_target_.positions[4] *= -1.0;
+        }
+        if (robot_positions[5] > (M_PI / 2))
+        {
+          active_target_.positions[3] -= M_PI;
+          active_target_.positions[5] -= M_PI;
+          active_target_.positions[4] *= -1.0;
+        }
+      }
+    }
+
     return true;
   }
 
@@ -126,7 +170,7 @@ namespace manager_core
 
   JointVelocityCommand JointTarget::getJointVelocityCommand(const RobotContext &context)
   {
-    Eigen::VectorXd robot_position = context.joint_positions.head(
+    Eigen::VectorXd robot_positions = context.joint_positions.head(
         context.joint_positions.size() - 1); // qd, on enlève une donnée pour enlever la valeur du
                                              // gripper. TODO : verifier sur Kinova
     Eigen::VectorXd target = active_target_.positions;
@@ -138,20 +182,20 @@ namespace manager_core
       return velocity_command;
     }
 
-    if (target.size() != robot_position.size())
+    if (target.size() != robot_positions.size())
     {
-      std::cout << "[ERROR] Size mismatch : " << target.size() << " != " << robot_position.size()
+      std::cout << "[ERROR] Size mismatch : " << target.size() << " != " << robot_positions.size()
                 << std::endl;
       return velocity_command;
     }
 
     Eigen::VectorXd target_velocity = Eigen::VectorXd::Zero(target.size());
     velocity_command.joint_speed = target_velocity; // Set zero
-    Eigen::VectorXd error(robot_position.size());
+    Eigen::VectorXd error(robot_positions.size());
 
     for (Eigen::Index i = 0; i < target.size(); ++i)
     {
-      error[i] = std::fmod(target[i] - robot_position[i], 2.0 * M_PI);
+      error[i] = std::fmod(target[i] - robot_positions[i], 2.0 * M_PI);
     }
 
     if (error.lpNorm<Eigen::Infinity>() <= config_.position_tolerance)
@@ -174,7 +218,7 @@ namespace manager_core
         const double target_velocity_norm = target_velocity.lpNorm<2>();
         if (target_velocity_norm > max_velocity)
         {
-          target_velocity *= max_velocity/target_velocity_norm;
+          target_velocity *= max_velocity / target_velocity_norm;
         }
       }
     }

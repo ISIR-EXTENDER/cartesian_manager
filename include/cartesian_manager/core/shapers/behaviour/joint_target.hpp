@@ -52,7 +52,7 @@ namespace manager_core
     bool start(const std::string &target_name, const RobotContext &context,
                std::string *error = nullptr) override;
     bool start(const Eigen::VectorXd &target, std::string *error = nullptr);
-    bool update(Eigen::VectorXd &joints);
+    bool update(const Eigen::VectorXd &joints);
     bool isComplete(const RobotContext &context) const override;
     bool hasTarget(const std::string &name) const;
     bool isActive() const;
