@@ -30,6 +30,7 @@ qontrol_explorer:
       - velocity
       - effort
     robot_command: position
+    reference_interface_name: velocity
 
     # Velocity parameters
     command_max_linear_velocity: 0.05
@@ -40,11 +41,7 @@ qontrol_explorer:
     regularisation_weight: 1e-4
     topic_control_frame: /explorer_user_interfaces/rqt_armcontrol/control_frame_selection
     joint_target_topic_name: /joint_target_command
-    joint_target_sliders: /joint_target_sliders
-    joint_target_gain: 1.0
-    joint_target_max_velocity: 0.2
-    joint_target_tolerance: 0.05
-    joint_target_task_weight: 1.0
+    joint_target_task_weight: 1000.0
 
 gripper_controller:
   ros__parameters:
@@ -75,7 +72,7 @@ cartesian_manager:
       hybrid_frame: hybrid_frame
 
     topics:
-      joystick_command: /joystick_cartesian_command
+      joystick_command: /physical_joystick_cartesian_command
       tablet_command: /tablet_cartesian_command
       visual_servoing_command: /visual_servoing_cartesian_command
       mode_request: /mode_request
@@ -85,6 +82,7 @@ cartesian_manager:
       ee_jac: /ee_jac
       joint_states: /joint_states
       joint_target_command: /joint_target_command
+      joint_target_sliders: /joint_target_sliders
       output_command: /cartesian_command
 
     inputs:
@@ -118,6 +116,9 @@ cartesian_manager:
         target_names: [home, joint_sliders]
         positions: [0.0, 0.2617, 3.1415, -2.26, 0.0, 0.96, 1.57,
                     0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        velocity_gain: 4.0
+        max_velocity: 0.8
+        tolerance: 0.0001
       pose_targets:
         target_names: [ready]
         frame_ids: [base_link]
