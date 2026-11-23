@@ -202,11 +202,10 @@ namespace manager_core
     { // Calcule la norme infinie de error et compare avec la tolerance
       isActive_ = false;
       return velocity_command;
-      //"Joint target reached; returning to Cartesian QP control."
+      std::cout << "Joint target reached; returning to Cartesian QP control." << std::endl;
     }
     else
     {
-
       target_velocity = config_.velocity_gain * error;
       const double max_velocity = std::max(0.0, config_.max_velocity);
       if (max_velocity == 0.0)
@@ -225,6 +224,7 @@ namespace manager_core
 
     velocity_command.joint_names = config_.joint_names; // Joint names par defaut [q1 -> q6-7]
     velocity_command.joint_speed = target_velocity;
+
     return velocity_command;
   }
 
