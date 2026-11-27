@@ -62,6 +62,7 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     static_cast<PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
         .configure(config.pose_targets);
+    static_cast<JointTarget &>(*behaviours_.at(Behaviours::JOINT_TARGET)).configure(config.joint_targets);
     rate_limiter_.setConfig(config.rate_limiter);
   }
 

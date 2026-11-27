@@ -344,6 +344,12 @@ namespace ros_cartesian_manager
         params.behaviours.pose_targets.position_tolerance = param.as_double();
       else if (name == "behaviours.pose_targets.orientation_tolerance")
         params.behaviours.pose_targets.orientation_tolerance = param.as_double();
+      else if (name == "behaviours.joint_targets.velocity_gain")
+        params.behaviours.joint_targets.velocity_gain = param.as_double();
+      else if (name == "behaviours.joint_targets.max_velocity")
+        params.behaviours.joint_targets.max_velocity = param.as_double();
+      else if (name == "behaviours.joint_targets.position_tolerance")
+        params.behaviours.joint_targets.position_tolerance = param.as_double();
     }
     return params;
   }

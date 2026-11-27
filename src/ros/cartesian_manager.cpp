@@ -60,6 +60,8 @@ namespace ros_cartesian_manager
     {
       const auto &a = lhs.pose_targets;
       const auto &b = rhs.pose_targets;
+      const auto &c = lhs.joint_targets;
+      const auto &d = rhs.joint_targets;
       return lhs.jaco.min_radius == rhs.jaco.min_radius &&
              lhs.jaco.max_angular_velocity == rhs.jaco.max_angular_velocity &&
              lhs.snake.gain == rhs.snake.gain &&
@@ -70,7 +72,9 @@ namespace ros_cartesian_manager
              a.max_linear_velocity == b.max_linear_velocity &&
              a.max_angular_velocity == b.max_angular_velocity &&
              a.position_tolerance == b.position_tolerance &&
-             a.orientation_tolerance == b.orientation_tolerance;
+             a.orientation_tolerance == b.orientation_tolerance &&
+             c.max_velocity == d.max_velocity && c.velocity_gain == d.velocity_gain &&
+             c.position_tolerance == d.position_tolerance && c.task_weight == d.task_weight;
     }
 
     double stampSec(const builtin_interfaces::msg::Time &stamp, const double fallback_sec)
