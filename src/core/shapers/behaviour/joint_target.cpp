@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <regex>
 #include <utility>
 
 namespace manager_core
@@ -170,9 +171,27 @@ namespace manager_core
 
   JointVelocityCommand JointTarget::getJointVelocityCommand(const RobotContext &context)
   {
-    Eigen::VectorXd robot_positions = context.joint_positions.head(
-        context.joint_positions.size() - 1); // qd, on enlève une donnée pour enlever la valeur du
-                                             // gripper. TODO : verifier sur Kinova
+    if (context.joint_names.size() != static_cast<std::size_t>(context.joint_positions.size()))
+    {
+      std::cout << "[ERROR] Joint names and positions size mismatch : "
+                << context.joint_names.size() << " != " << context.joint_positions.size()
+                << std::endl;
+      return JointVelocityCommand{};
+    }
+
+    static const std::regex joint_name_pattern("joint_");
+    Eigen::VectorXd robot_positions(context.joint_positions.size());
+    Eigen::Index joint_position_count = 0;
+    for (std::size_t i = 0; i < context.joint_names.size(); ++i)
+    {
+      if (std::regex_search(context.joint_names[i], joint_name_pattern))
+      {
+        robot_positions[joint_position_count++] =
+            context.joint_positions[static_cast<Eigen::Index>(i)];
+      }
+    }
+    robot_positions.conservativeResize(joint_position_count);
+
     Eigen::VectorXd target = active_target_.positions;
     JointVelocityCommand velocity_command;
 
