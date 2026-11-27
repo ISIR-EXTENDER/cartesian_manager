@@ -124,17 +124,20 @@ namespace ros_cartesian_manager
                                          params.inputs.joystick.enabled};
 
       case manager_core::InputSource::HAND_JOYSTICK:
-        requirePositive(params.inputs.hand_joystick.timeout_sec, "inputs.hand_joystick.timeout_sec");
+        requirePositive(params.inputs.hand_joystick.timeout_sec,
+                        "inputs.hand_joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.hand_joystick.timeout_sec,
                                          params.inputs.hand_joystick.enabled};
 
       case manager_core::InputSource::FACE_JOYSTICK:
-        requirePositive(params.inputs.face_joystick.timeout_sec, "inputs.face_joystick.timeout_sec");
+        requirePositive(params.inputs.face_joystick.timeout_sec,
+                        "inputs.face_joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.face_joystick.timeout_sec,
                                          params.inputs.face_joystick.enabled};
 
       case manager_core::InputSource::MOUSE_JOYSTICK:
-        requirePositive(params.inputs.mouse_joystick.timeout_sec, "inputs.mouse_joystick.timeout_sec");
+        requirePositive(params.inputs.mouse_joystick.timeout_sec,
+                        "inputs.mouse_joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.mouse_joystick.timeout_sec,
                                          params.inputs.mouse_joystick.enabled};
 
@@ -185,7 +188,7 @@ namespace ros_cartesian_manager
         target.name = target_names[target_index];
         target.positions = Eigen::Map<const Eigen::VectorXd>(
             positions.data() + first_position, static_cast<Eigen::Index>(joint_count));
-            
+
         // target.positions.assign(first, last);
         targets.push_back(std::move(target));
       }
@@ -274,7 +277,7 @@ namespace ros_cartesian_manager
       config.target_names = target_names;
       config.positions =
           makeJointTargets(target_names, joint_target_params.positions, config.joint_names.size());
-        
+
       config.max_velocity = joint_target_params.max_velocity;
       config.velocity_gain = joint_target_params.velocity_gain;
       config.position_tolerance = joint_target_params.position_tolerance;
@@ -388,7 +391,6 @@ namespace ros_cartesian_manager
     requireNonEmpty(config.topics.joint_target_command, "topics.joint_target_command");
     requireNonEmpty(config.topics.joint_target_sliders, "topics.joint_target_sliders");
     requireNonEmpty(config.topics.output_command, "topics.output_command");
-
 
     config.output_frame_id = params.frames.output_frame_id;
     config.default_input_frame_id = params.frames.default_input_frame_id;

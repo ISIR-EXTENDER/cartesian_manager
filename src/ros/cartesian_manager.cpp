@@ -463,7 +463,8 @@ namespace ros_cartesian_manager
     }
   }
 
-  void CartesianManagerROS::handJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  void CartesianManagerROS::handJoystickSubscriberCallback(
+      const geometry_msgs::msg::TwistStamped &msg)
   {
     const auto now_sec = topic_manager_.nowSec();
     const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
@@ -482,7 +483,8 @@ namespace ros_cartesian_manager
     }
   }
 
-  void CartesianManagerROS::faceJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  void CartesianManagerROS::faceJoystickSubscriberCallback(
+      const geometry_msgs::msg::TwistStamped &msg)
   {
     const auto now_sec = topic_manager_.nowSec();
     const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
@@ -501,7 +503,8 @@ namespace ros_cartesian_manager
     }
   }
 
-  void CartesianManagerROS::mouseJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  void CartesianManagerROS::mouseJoystickSubscriberCallback(
+      const geometry_msgs::msg::TwistStamped &msg)
   {
     const auto now_sec = topic_manager_.nowSec();
     const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
@@ -577,14 +580,14 @@ namespace ros_cartesian_manager
     {
       RCLCPP_ERROR(get_logger(),
                    "jointTargetSlidersSubscriberCallback : Empty payload msg -> buttons");
-      return nullptr;
+      return;
     }
 
     if (msg.axes.size() == 0)
     {
       RCLCPP_ERROR(get_logger(),
                    "jointTargetSlidersSubscriberCallback : Empty payload msg -> axes");
-      return nullptr;
+      return;
     }
 
     bool isActive = (msg.buttons[0] == 1);
@@ -595,9 +598,8 @@ namespace ros_cartesian_manager
     {
       target[static_cast<Eigen::Index>(i)] = msg.axes[i];
     }
-    
+
     manager_.setJointTarget(target, isActive);
-    
   }
 
   void CartesianManagerROS::eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg)
@@ -726,8 +728,7 @@ namespace ros_cartesian_manager
     const auto command =
         manager_.update(now.seconds(), 1.0 / config_.update_rate_hz, robot_context_);
 
-    if (const auto *joint_command =
-            std::get_if<manager_core::JointVelocityCommand>(&command))
+    if (const auto *joint_command = std::get_if<manager_core::JointVelocityCommand>(&command))
     {
       publishJointVelocityCommand(*joint_command);
     }
