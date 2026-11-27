@@ -565,14 +565,24 @@ namespace ros_cartesian_manager
 
   void CartesianManagerROS::jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg)
   {
-    RCLCPP_INFO(get_logger(),
-                "Received joint target sliders message with %zu axes and %zu buttons",
-                msg.axes.size(), msg.buttons.size());
-    for (std::size_t i = 0; i < msg.buttons.size(); ++i)
+    RCLCPP_DEBUG(get_logger(),
+                 "Received joint target sliders message with %zu axes and %zu buttons",
+                 msg.axes.size(), msg.buttons.size());
+
+    if (msg.buttons.size() == 0)
     {
-      RCLCPP_DEBUG(get_logger(), "Joy button[%zu] = %d", i, msg.buttons[i]);
+      RCLCPP_ERROR(get_logger(),
+                   "jointTargetSlidersSubscriberCallback : Empty payload msg -> buttons");
+      return nullptr;
     }
-    
+
+    if (msg.axes.size() == 0)
+    {
+      RCLCPP_ERROR(get_logger(),
+                   "jointTargetSlidersSubscriberCallback : Empty payload msg -> axes");
+      return nullptr;
+    }
+
     bool isActive = (msg.buttons[0] == 1);
 
     Eigen::VectorXd target(msg.axes.size());
