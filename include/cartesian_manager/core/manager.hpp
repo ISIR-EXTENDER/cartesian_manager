@@ -1,9 +1,11 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include "cartesian_manager/core/input_manager.hpp"
@@ -23,7 +25,7 @@ namespace manager_core
     JacoShaperConfig jaco;
     SnakeShaperConfig snake;
     FramesConfig frames;
-    JointTargetBehaviourConfig joint_targets;
+    JointTargetConfig joint_targets;
     PoseTargetConfig pose_targets;
     RateLimiterConfig rate_limiter;
     std::vector<InputConfig> inputs;
@@ -37,6 +39,7 @@ namespace manager_core
     void addInputChannel(InputSource source, double timeout_sec, bool enabled = true);
     void configureInputChannels(const std::vector<InputConfig> &channels);
     void clearInputChannels();
+    void updateJointTargetName(std::string &joint_target_name);
 
     void enableInput(InputSource source);
     void disableInput(InputSource source);
@@ -46,14 +49,18 @@ namespace manager_core
 
     bool setMode(const std::string &mode_request);
     bool setPoseTarget(const CartesianPose &target, std::string *error = nullptr);
-    std::optional<JointTargetCommand> activeJointTargetCommand() const;
+    bool setJointTarget(const std::string &target_name,
+                        const RobotContext &context = RobotContext{}, std::string *error = nullptr);
+    bool setJointTarget(Eigen::VectorXd &joints, bool state = true, std::string *error = nullptr);
+
+    JointVelocityCommand activeJointTargetCommand(const RobotContext &robot_context);
 
     Geometrics geometricState() const;
     Behaviours behaviourState() const;
     std::string activeTargetName() const;
 
-    std::optional<CartesianVelocity> update(double now_sec, double dt_sec,
-                                            const RobotContext &context);
+    std::variant<CartesianCommand, JointVelocityCommand> update(double now_sec, double dt_sec,
+                                                                const RobotContext &context);
 
     InputManager getInputManager() const
     {
@@ -66,17 +73,17 @@ namespace manager_core
 
     void registerGeometricShaper(Geometrics state, std::unique_ptr<Shaper> shaper);
     void registerBehaviour(Behaviours state, std::unique_ptr<Shaper> shaper);
-    const JointTarget *jointTargetByName(const std::string &target_name) const;
+    const JointTargetCommand *jointTargetByName(const std::string &target_name) const;
 
     Geometrics geometric_state_{Geometrics::BOTH};
     Behaviours behaviour_state_{Behaviours::PASSTHROUGH};
-    JointTargetBehaviourConfig joint_target_config_;
+    JointTargetConfig joint_target_config_;
+    JointTarget joint_target_;
     RateLimiter rate_limiter_;
 
     InputManager input_manager_;
 
     std::unordered_map<Geometrics, std::unique_ptr<Shaper>> geometric_shapers_;
     std::unordered_map<Behaviours, std::unique_ptr<Shaper>> behaviours_;
-    std::string joint_target_name_{"home"};
   };
 } // namespace manager_core

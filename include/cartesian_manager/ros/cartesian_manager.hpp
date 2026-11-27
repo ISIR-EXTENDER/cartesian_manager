@@ -11,6 +11,7 @@
 #include <diagnostic_msgs/msg/diagnostic_status.hpp>
 
 #include <sensor_msgs/msg/joint_state.hpp>
+#include "sensor_msgs/msg/joy.hpp"
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -35,6 +36,7 @@ namespace ros_cartesian_manager
     void poseTargetCallback(const geometry_msgs::msg::PoseStamped &pose_target);
 
     void jointStatesSubscriberCallback(const sensor_msgs::msg::JointState &msg);
+    void jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg);
     void eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg);
     void eeVelSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void eeJacobianSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg);
@@ -44,6 +46,7 @@ namespace ros_cartesian_manager
     void mouseJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void tabletSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
     void visualServoingSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg);
+    void qontrolSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg);
 
   private:
     void setupSubscribers();
@@ -55,7 +58,7 @@ namespace ros_cartesian_manager
 
     rcl_interfaces::msg::SetParametersResult validateParameterUpdate(
         const std::vector<rclcpp::Parameter> &parameters) const;
-    void publishJointTargetCommand(const std::optional<manager_core::JointTargetCommand> &command);
+    void publishJointVelocityCommand(const std::optional<manager_core::JointVelocityCommand> &command);
     void publishStatus();
 
     TopicManager topic_manager_;
@@ -68,5 +71,6 @@ namespace ros_cartesian_manager
     cartesian_manager::Params params_;
     ManagerConfig config_;
     std::optional<diagnostic_msgs::msg::DiagnosticStatus> last_status_;
+    Eigen::VectorXd desired_joint_position_;
   };
 } // namespace ros_cartesian_manager

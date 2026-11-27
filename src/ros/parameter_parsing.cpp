@@ -124,17 +124,20 @@ namespace ros_cartesian_manager
                                          params.inputs.joystick.enabled};
 
       case manager_core::InputSource::HAND_JOYSTICK:
-        requirePositive(params.inputs.hand_joystick.timeout_sec, "inputs.hand_joystick.timeout_sec");
+        requirePositive(params.inputs.hand_joystick.timeout_sec,
+                        "inputs.hand_joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.hand_joystick.timeout_sec,
                                          params.inputs.hand_joystick.enabled};
 
       case manager_core::InputSource::FACE_JOYSTICK:
-        requirePositive(params.inputs.face_joystick.timeout_sec, "inputs.face_joystick.timeout_sec");
+        requirePositive(params.inputs.face_joystick.timeout_sec,
+                        "inputs.face_joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.face_joystick.timeout_sec,
                                          params.inputs.face_joystick.enabled};
 
       case manager_core::InputSource::MOUSE_JOYSTICK:
-        requirePositive(params.inputs.mouse_joystick.timeout_sec, "inputs.mouse_joystick.timeout_sec");
+        requirePositive(params.inputs.mouse_joystick.timeout_sec,
+                        "inputs.mouse_joystick.timeout_sec");
         return manager_core::InputConfig{source, params.inputs.mouse_joystick.timeout_sec,
                                          params.inputs.mouse_joystick.enabled};
 
@@ -153,11 +156,11 @@ namespace ros_cartesian_manager
       throw std::invalid_argument("inputs.sources contains an unknown source enum value");
     }
 
-    std::vector<manager_core::JointTarget> makeJointTargets(
+    std::vector<manager_core::JointTargetCommand> makeJointTargets(
         const std::vector<std::string> &target_names, const std::vector<double> &positions,
         std::size_t joint_count)
     {
-      std::vector<manager_core::JointTarget> targets;
+      std::vector<manager_core::JointTargetCommand> targets;
       if (joint_count == 0 || target_names.empty())
         return targets;
 
@@ -181,9 +184,12 @@ namespace ros_cartesian_manager
               "behaviours.joint_targets.positions contains a non-finite value");
         }
 
-        manager_core::JointTarget target;
+        manager_core::JointTargetCommand target;
         target.name = target_names[target_index];
-        target.positions.assign(first, last);
+        target.positions = Eigen::Map<const Eigen::VectorXd>(
+            positions.data() + first_position, static_cast<Eigen::Index>(joint_count));
+
+        // target.positions.assign(first, last);
         targets.push_back(std::move(target));
       }
 
@@ -257,20 +263,25 @@ namespace ros_cartesian_manager
       return config;
     }
 
-    manager_core::JointTargetBehaviourConfig makeJointTargetConfig(
-        const cartesian_manager::Params &params)
+    manager_core::JointTargetConfig makeJointTargetConfig(const cartesian_manager::Params &params)
     {
       const auto &joint_target_params = params.behaviours.joint_targets;
 
-      manager_core::JointTargetBehaviourConfig config;
+      manager_core::JointTargetConfig config;
       config.joint_names = normalizedNonEmptyNames(joint_target_params.joint_names);
       requireUniqueNames(config.joint_names, "behaviours.joint_targets.joint_names");
 
       auto target_names = normalizedNonEmptyNames(joint_target_params.target_names);
       requireUniqueNames(target_names, "behaviours.joint_targets.target_names");
 
-      config.targets =
+      config.target_names = target_names;
+      config.positions =
           makeJointTargets(target_names, joint_target_params.positions, config.joint_names.size());
+
+      config.max_velocity = joint_target_params.max_velocity;
+      config.velocity_gain = joint_target_params.velocity_gain;
+      config.position_tolerance = joint_target_params.position_tolerance;
+
       return config;
     }
   } // namespace
@@ -336,6 +347,12 @@ namespace ros_cartesian_manager
         params.behaviours.pose_targets.position_tolerance = param.as_double();
       else if (name == "behaviours.pose_targets.orientation_tolerance")
         params.behaviours.pose_targets.orientation_tolerance = param.as_double();
+      else if (name == "behaviours.joint_targets.velocity_gain")
+        params.behaviours.joint_targets.velocity_gain = param.as_double();
+      else if (name == "behaviours.joint_targets.max_velocity")
+        params.behaviours.joint_targets.max_velocity = param.as_double();
+      else if (name == "behaviours.joint_targets.position_tolerance")
+        params.behaviours.joint_targets.position_tolerance = param.as_double();
     }
     return params;
   }
@@ -361,7 +378,9 @@ namespace ros_cartesian_manager
     config.topics.ee_jac = params.topics.ee_jac;
     config.topics.joint_states = params.topics.joint_states;
     config.topics.joint_target_command = params.topics.joint_target_command;
+    config.topics.joint_target_sliders = params.topics.joint_target_sliders;
     config.topics.output_command = params.topics.output_command;
+    config.topics.qontrol_controller_commands = params.topics.qontrol_controller_commands;
 
     requireNonEmpty(config.topics.mode_request, "topics.mode_request");
     requireNonEmpty(config.topics.pose_target, "topics.pose_target");
@@ -370,6 +389,7 @@ namespace ros_cartesian_manager
     requireNonEmpty(config.topics.ee_jac, "topics.ee_jac");
     requireNonEmpty(config.topics.joint_states, "topics.joint_states");
     requireNonEmpty(config.topics.joint_target_command, "topics.joint_target_command");
+    requireNonEmpty(config.topics.joint_target_sliders, "topics.joint_target_sliders");
     requireNonEmpty(config.topics.output_command, "topics.output_command");
 
     config.output_frame_id = params.frames.output_frame_id;

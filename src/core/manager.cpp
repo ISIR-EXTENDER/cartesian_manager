@@ -4,6 +4,7 @@
 #include <optional>
 #include <sstream>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace manager_core
@@ -38,11 +39,16 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     joint_target_config_ = config.joint_targets;
     registerBehaviour(Behaviours::POSE_TARGET, std::make_unique<PoseTarget>(config.pose_targets));
+    registerBehaviour(Behaviours::JOINT_TARGET,
+                      std::make_unique<JointTarget>(config.joint_targets));
+
+    const auto joint_target = behaviours_.find(Behaviours::JOINT_TARGET);
+    joint_target_ = static_cast<JointTarget &>(*joint_target->second);
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
       behaviour_state_ = Behaviours::PASSTHROUGH;
 
-    if (behaviour_state_ == Behaviours::JOINT_TARGET && !jointTargetByName(joint_target_name_))
+    if (behaviour_state_ == Behaviours::JOINT_TARGET)
       behaviour_state_ = Behaviours::PASSTHROUGH;
 
     rate_limiter_.setConfig(config.rate_limiter);
@@ -56,6 +62,7 @@ namespace manager_core
     registerGeometricShaper(Geometrics::SNAKE, std::make_unique<SnakeShaper>(config.snake));
     static_cast<PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
         .configure(config.pose_targets);
+    static_cast<JointTarget &>(*behaviours_.at(Behaviours::JOINT_TARGET)).configure(config.joint_targets);
     rate_limiter_.setConfig(config.rate_limiter);
   }
 
@@ -174,12 +181,11 @@ namespace manager_core
           return false;
         }
 
-        if (!jointTargetByName(parts[2]))
+        if (!jointTargetByName(parts[2])) // TODO changer
         {
           return false;
         }
 
-        joint_target_name_ = parts[2];
         behaviour_state_ = Behaviours::JOINT_TARGET;
         return true;
       }
@@ -211,20 +217,43 @@ namespace manager_core
     return true;
   }
 
-  std::optional<JointTargetCommand> Manager::activeJointTargetCommand() const
+  bool Manager::setJointTarget(const std::string &target_name, const RobotContext &context, std::string *error)
   {
+
+    if (!joint_target_.setActiveTarget(target_name) || context.joint_positions.size() == 0) // try to setActiveTarget
+      return false;
+
+    behaviour_state_ = Behaviours::JOINT_TARGET;
+    joint_target_.update(context.joint_positions.head(context.joint_positions.size() - 1));
+    rate_limiter_.reset();
+    return true;
+  }
+
+  bool Manager::setJointTarget(Eigen::VectorXd &joints, bool active, std::string *error)
+  {
+    if (!active && joint_target_.activeTargetName() == "joint_sliders")
+      return joint_target_.setUnactive();
+
+    if (!joint_target_.setActiveTarget("joint_sliders")) // essaye de setActiveTarget joint_sliders
+      return false;
+    
+    joint_target_.update(joints);
+    behaviour_state_ = Behaviours::JOINT_TARGET;
+    rate_limiter_.reset();
+    return true;
+  }
+
+  JointVelocityCommand Manager::activeJointTargetCommand(const RobotContext &robot_context)
+  {
+
+    JointVelocityCommand command;
+
     if (behaviour_state_ != Behaviours::JOINT_TARGET)
-      return std::nullopt;
+      return command;
 
-    const auto target = jointTargetByName(joint_target_name_);
-    if (!target)
-      return std::nullopt;
-
-    JointTargetCommand command;
-    command.name = target->name;
-    command.joint_names = joint_target_config_.joint_names;
-    command.positions = target->positions;
+    command = joint_target_.getJointVelocityCommand(robot_context);
     return command;
+
   }
 
   Geometrics Manager::geometricState() const
@@ -240,7 +269,7 @@ namespace manager_core
   std::string Manager::activeTargetName() const
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
-      return joint_target_name_;
+      return joint_target_.activeTargetName();
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
       return static_cast<const PoseTarget &>(*behaviours_.at(Behaviours::POSE_TARGET))
@@ -285,22 +314,30 @@ namespace manager_core
     behaviours_[state] = std::move(shaper);
   }
 
-  const JointTarget *Manager::jointTargetByName(const std::string &target_name) const
+  const JointTargetCommand *Manager::jointTargetByName(const std::string &target_name) const
   {
-    for (const auto &target : joint_target_config_.targets)
+    for (const auto &target : joint_target_config_.positions)
       if (target.name == target_name)
         return &target;
 
     return nullptr;
   }
 
-  std::optional<CartesianCommand> Manager::update(double now_sec, double dt_sec,
-                                                  const RobotContext &context)
+  std::variant<CartesianCommand, JointVelocityCommand> Manager::update(double now_sec,
+                                                                       double dt_sec,
+                                                                       const RobotContext &context)
   {
     if (behaviour_state_ == Behaviours::JOINT_TARGET)
-    {
+    { 
+      RobotContext r; //TODO dégager la variable inutilede isComplete
+      if(joint_target_.isComplete(r)) {
+        setMode("behaviour/passthrough");
+        return JointVelocityCommand{};
+      }
+
+      JointVelocityCommand command = activeJointTargetCommand(context);
       rate_limiter_.reset();
-      return CartesianVelocity{};
+      return command;
     }
 
     if (behaviour_state_ == Behaviours::POSE_TARGET)
@@ -319,8 +356,9 @@ namespace manager_core
     }
 
     auto command = behaviour_state_ == Behaviours::POSE_TARGET
-                       ? std::optional<CartesianCommand>(CartesianCommand{})
+                       ? CartesianCommand{}
                        : input_manager_.getFullCommand(now_sec, context);
+
     if (command)
     {
       applyGeometric(*command, context, dt_sec);
@@ -340,13 +378,12 @@ namespace manager_core
         command->linear /= ang_norm;
         command->angular /= ang_norm;
       }
-
       rate_limiter_.update(*command, dt_sec);
+      return command.value();
     }
-    else
-      rate_limiter_.reset();
 
-    return command;
+    rate_limiter_.reset();
+    return CartesianCommand{};
   }
 
 } // namespace manager_core

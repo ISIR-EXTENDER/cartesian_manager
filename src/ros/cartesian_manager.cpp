@@ -5,6 +5,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "diagnostic_msgs/msg/diagnostic_status.hpp"
@@ -13,6 +14,7 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/string.hpp"
 
@@ -20,8 +22,9 @@ namespace ros_cartesian_manager
 {
   namespace
   {
-    constexpr const char *kOutputCommandPublisher = "output_command";
-    constexpr const char *kJointTargetCommandPublisher = "joint_target_command";
+    constexpr const char *kOutputCommandPublisher = "output_command"; // correspond au param du YAML
+    constexpr const char *kJointTargetCommandPublisher =
+        "joint_target_command"; // a rename en velocity
     constexpr const char *kStatusPublisher = "status";
     constexpr const char *kBehaviourPassthroughMode = "behaviour/passthrough";
     constexpr const char *kJointTargetModePrefix = "behaviour/joint_target/";
@@ -57,6 +60,8 @@ namespace ros_cartesian_manager
     {
       const auto &a = lhs.pose_targets;
       const auto &b = rhs.pose_targets;
+      const auto &c = lhs.joint_targets;
+      const auto &d = rhs.joint_targets;
       return lhs.jaco.min_radius == rhs.jaco.min_radius &&
              lhs.jaco.max_angular_velocity == rhs.jaco.max_angular_velocity &&
              lhs.snake.gain == rhs.snake.gain &&
@@ -67,7 +72,9 @@ namespace ros_cartesian_manager
              a.max_linear_velocity == b.max_linear_velocity &&
              a.max_angular_velocity == b.max_angular_velocity &&
              a.position_tolerance == b.position_tolerance &&
-             a.orientation_tolerance == b.orientation_tolerance;
+             a.orientation_tolerance == b.orientation_tolerance &&
+             c.max_velocity == d.max_velocity && c.velocity_gain == d.velocity_gain &&
+             c.position_tolerance == d.position_tolerance && c.task_weight == d.task_weight;
     }
 
     double stampSec(const builtin_interfaces::msg::Time &stamp, const double fallback_sec)
@@ -112,13 +119,15 @@ namespace ros_cartesian_manager
       return msg;
     }
 
-    sensor_msgs::msg::JointState jointTargetToMsg(const manager_core::JointTargetCommand &command,
-                                                  const rclcpp::Time &stamp)
+    sensor_msgs::msg::JointState jointVelocityTargetToMsg(
+        const manager_core::JointVelocityCommand &command, const rclcpp::Time &stamp)
     {
       sensor_msgs::msg::JointState msg;
       msg.header.stamp = stamp;
       msg.name = command.joint_names;
-      msg.position = command.positions;
+      std::vector<double> velocity(command.joint_speed.data(),
+                                   command.joint_speed.data() + command.joint_speed.size());
+      msg.velocity = velocity;
       return msg;
     }
 
@@ -383,6 +392,15 @@ namespace ros_cartesian_manager
         std::bind(&CartesianManagerROS::jointStatesSubscriberCallback, this,
                   std::placeholders::_1));
 
+    topic_manager_.addSubscriber<sensor_msgs::msg::Joy>(
+        "joint_target_sliders", config_.topics.joint_target_sliders,
+        std::bind(&CartesianManagerROS::jointTargetSlidersSubscriberCallback, this,
+                  std::placeholders::_1));
+
+    topic_manager_.addSubscriber<std_msgs::msg::Float64MultiArray>(
+        "qontrol_controller_commands", config_.topics.qontrol_controller_commands,
+        std::bind(&CartesianManagerROS::qontrolSubscriberCallback, this, std::placeholders::_1));
+
     for (const auto &input : config_.manager.inputs)
     {
       switch (input.source)
@@ -390,7 +408,8 @@ namespace ros_cartesian_manager
       case manager_core::InputSource::JOYSTICK:
         topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
             "joystick_command", config_.topics.joystick_command,
-            std::bind(&CartesianManagerROS::joystickSubscriberCallback, this, std::placeholders::_1));
+            std::bind(&CartesianManagerROS::joystickSubscriberCallback, this,
+                      std::placeholders::_1));
         break;
       case manager_core::InputSource::HAND_JOYSTICK:
         topic_manager_.addSubscriber<geometry_msgs::msg::TwistStamped>(
@@ -444,7 +463,8 @@ namespace ros_cartesian_manager
     }
   }
 
-  void CartesianManagerROS::handJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  void CartesianManagerROS::handJoystickSubscriberCallback(
+      const geometry_msgs::msg::TwistStamped &msg)
   {
     const auto now_sec = topic_manager_.nowSec();
     const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
@@ -463,7 +483,8 @@ namespace ros_cartesian_manager
     }
   }
 
-  void CartesianManagerROS::faceJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  void CartesianManagerROS::faceJoystickSubscriberCallback(
+      const geometry_msgs::msg::TwistStamped &msg)
   {
     const auto now_sec = topic_manager_.nowSec();
     const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
@@ -482,7 +503,8 @@ namespace ros_cartesian_manager
     }
   }
 
-  void CartesianManagerROS::mouseJoystickSubscriberCallback(const geometry_msgs::msg::TwistStamped &msg)
+  void CartesianManagerROS::mouseJoystickSubscriberCallback(
+      const geometry_msgs::msg::TwistStamped &msg)
   {
     const auto now_sec = topic_manager_.nowSec();
     const auto input_frame_id = frameOrDefault(msg.header.frame_id, config_.default_input_frame_id);
@@ -548,6 +570,38 @@ namespace ros_cartesian_manager
         msg.position.data(), static_cast<Eigen::Index>(msg.position.size()));
   }
 
+  void CartesianManagerROS::jointTargetSlidersSubscriberCallback(const sensor_msgs::msg::Joy &msg)
+  {
+    RCLCPP_DEBUG(get_logger(),
+                 "Received joint target sliders message with %zu axes and %zu buttons",
+                 msg.axes.size(), msg.buttons.size());
+
+    if (msg.buttons.size() == 0)
+    {
+      RCLCPP_ERROR(get_logger(),
+                   "jointTargetSlidersSubscriberCallback : Empty payload msg -> buttons");
+      return;
+    }
+
+    if (msg.axes.size() == 0)
+    {
+      RCLCPP_ERROR(get_logger(),
+                   "jointTargetSlidersSubscriberCallback : Empty payload msg -> axes");
+      return;
+    }
+
+    bool isActive = (msg.buttons[0] == 1);
+
+    Eigen::VectorXd target(msg.axes.size());
+
+    for (std::size_t i = 0; i < msg.axes.size(); ++i)
+    {
+      target[static_cast<Eigen::Index>(i)] = msg.axes[i];
+    }
+
+    manager_.setJointTarget(target, isActive);
+  }
+
   void CartesianManagerROS::eePoseSubscriberCallback(const geometry_msgs::msg::PoseStamped &msg)
   {
     robot_context_.ee_pose.position =
@@ -589,13 +643,27 @@ namespace ros_cartesian_manager
 
     if (joint_target_request)
     {
-      publishJointTargetCommand(manager_.activeJointTargetCommand());
-      manager_.setMode(kBehaviourPassthroughMode);
+
+      // Lire le nom de la target et la mettre en activeTraget
+      std::string joint_target_name = normalized_mode_request.substr(
+          strlen(kJointTargetModePrefix)); // extrait home ou wrist_return du msg normalise
+
+      manager_.setJointTarget(joint_target_name, robot_context_);
+      RCLCPP_INFO(get_logger(), "Target : %s", joint_target_name.c_str());
       return;
     }
 
     if (passthrough_request || pose_target_request)
-      publishJointTargetCommand(std::nullopt);
+      publishJointVelocityCommand(std::nullopt);
+  }
+
+  void CartesianManagerROS::qontrolSubscriberCallback(const std_msgs::msg::Float64MultiArray &msg)
+  {
+    desired_joint_position_.resize(msg.data.size());
+    for (int i = 0; i < msg.data.size(); i++)
+    {
+      desired_joint_position_[i] = msg.data[i];
+    }
   }
 
   void CartesianManagerROS::poseTargetCallback(const geometry_msgs::msg::PoseStamped &pose_target)
@@ -612,9 +680,9 @@ namespace ros_cartesian_manager
     target.frame_id = pose_target.header.frame_id;
     target.position = Eigen::Vector3d(pose_target.pose.position.x, pose_target.pose.position.y,
                                       pose_target.pose.position.z);
-    target.orientation = Eigen::Quaterniond(
-        pose_target.pose.orientation.w, pose_target.pose.orientation.x,
-        pose_target.pose.orientation.y, pose_target.pose.orientation.z);
+    target.orientation =
+        Eigen::Quaterniond(pose_target.pose.orientation.w, pose_target.pose.orientation.x,
+                           pose_target.pose.orientation.y, pose_target.pose.orientation.z);
 
     std::string error;
     if (!manager_.setPoseTarget(target, &error))
@@ -623,15 +691,17 @@ namespace ros_cartesian_manager
       return;
     }
 
-    publishJointTargetCommand(std::nullopt);
+    publishJointVelocityCommand(std::nullopt);
   }
 
-  void CartesianManagerROS::publishJointTargetCommand(
-      const std::optional<manager_core::JointTargetCommand> &command)
+  void CartesianManagerROS::publishJointVelocityCommand(
+      const std::optional<manager_core::JointVelocityCommand> &command)
   {
     if (command)
     {
-      topic_manager_.publish(kJointTargetCommandPublisher, jointTargetToMsg(*command, now()));
+
+      topic_manager_.publish(kJointTargetCommandPublisher,
+                             jointVelocityTargetToMsg(*command, now()));
       return;
     }
 
@@ -656,10 +726,20 @@ namespace ros_cartesian_manager
 
     const auto now = this->now();
     const auto command =
-        manager_.update(now.seconds(), 1.0 / config_.update_rate_hz, robot_context_)
-            .value_or(manager_core::CartesianVelocity{});
-    topic_manager_.publish(kOutputCommandPublisher,
-                           commandToMsg(command, now, config_.output_frame_id));
+        manager_.update(now.seconds(), 1.0 / config_.update_rate_hz, robot_context_);
+
+    if (const auto *joint_command = std::get_if<manager_core::JointVelocityCommand>(&command))
+    {
+      publishJointVelocityCommand(*joint_command);
+    }
+    else if (manager_.behaviourState() == manager_core::Behaviours::PASSTHROUGH ||
+             manager_.behaviourState() == manager_core::Behaviours::POSE_TARGET)
+    {
+      topic_manager_.publish(kOutputCommandPublisher,
+                             commandToMsg(std::get<manager_core::CartesianCommand>(command), now,
+                                          config_.output_frame_id));
+    }
+
     publishStatus();
   }
 } // namespace ros_cartesian_manager
