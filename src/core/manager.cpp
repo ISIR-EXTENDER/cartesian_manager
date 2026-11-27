@@ -219,7 +219,7 @@ namespace manager_core
   bool Manager::setJointTarget(const std::string &target_name, const RobotContext &context, std::string *error)
   {
 
-    if (!joint_target_.setActiveTarget(target_name)) // essaye de setActiveTarget
+    if (!joint_target_.setActiveTarget(target_name) || context.joint_positions.size() == 0) // try to setActiveTarget
       return false;
 
     behaviour_state_ = Behaviours::JOINT_TARGET;
