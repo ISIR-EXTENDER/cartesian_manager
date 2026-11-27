@@ -121,7 +121,7 @@ cartesian_manager:
                     0.0,  0.0, 0.0, 0.0, 0.0, 0.0]
         velocity_gain: 4.0
         max_velocity: 0.8
-        tolerance: 0.0001
+        position_tolerance: 0.0001
         
       pose_targets:
         target_names: [ready]

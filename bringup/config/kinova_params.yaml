@@ -134,8 +134,8 @@ cartesian_manager:
         positions: [0.0, 0.2617, 3.1415, -2.26, 0.0, 0.96, 1.57,
                     0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         velocity_gain: 4.0
-        max_velocity: 0.8
-        tolerance: 0.0001
+        max_velocity: 0.4
+        position_tolerance: 0.0001
       pose_targets:
         target_names: [ready]
         frame_ids: [base_link]
