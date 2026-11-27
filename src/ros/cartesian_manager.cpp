@@ -717,7 +717,8 @@ namespace ros_cartesian_manager
     {
       publishJointVelocityCommand(*joint_command);
     }
-    else if (manager_.behaviourState() == manager_core::Behaviours::PASSTHROUGH)
+    else if (manager_.behaviourState() == manager_core::Behaviours::PASSTHROUGH ||
+             manager_.behaviourState() == manager_core::Behaviours::POSE_TARGET)
     {
       topic_manager_.publish(kOutputCommandPublisher,
                              commandToMsg(std::get<manager_core::CartesianCommand>(command), now,
